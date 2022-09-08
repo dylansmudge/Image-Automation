@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "FgBnAqooV/IYyIWjNibUDGrWF3ZdDu1euR7OJixLJz544zGBUDXXVXQJIufcB9Ci4bt9nYEOkoyBqyFnqXH8pA==",
+  "dgSpecHash": "Le1V6Dzyi/3OEqrP/STa20MzN4VU28X6DQBwbawJO6qlBocovZinFch/5AHoBWzGvL9bPAXx2Kna0bYppCyuOg==",
   "success": true,
-  "projectFilePath": "/Users/dylancarlyle/Documents/image-automation/image-automation.csproj",
+  "projectFilePath": "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/image-automation.csproj",
   "expectedPackageFiles": [
     "/Users/dylancarlyle/.nuget/packages/microsoft.aspnet.webapi.client/5.2.4/microsoft.aspnet.webapi.client.5.2.4.nupkg.sha512",
     "/Users/dylancarlyle/.nuget/packages/microsoft.aspnetcore.authentication.abstractions/2.1.0/microsoft.aspnetcore.authentication.abstractions.2.1.0.nupkg.sha512",

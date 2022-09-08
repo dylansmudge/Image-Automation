@@ -20,8 +20,8 @@ namespace Image
         private readonly HttpClient client = new HttpClient();
 
 
-        [FunctionName("GetImage")]
-        public async Task<IActionResult> GetImage(
+        [FunctionName("PostImage")]
+        public async Task<IActionResult> PostImage(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
@@ -30,10 +30,12 @@ namespace Image
             {
                 client.BaseAddress = URL;
                 client.DefaultRequestHeaders.Add("x-api-key", APIKey);
-                HttpResponseMessage response = await client.GetAsync(URL);
-                string responseBody = await response.Content.ReadAsStringAsync();
-                // Above three lines can be replaced with new helper method below
-                // string responseBody = await client.GetStringAsync(uri);
+
+                var content = await new StreamReader(req.Body).ReadToEndAsync();
+                StringContent stringContent = new StringContent(content);
+                HttpResponseMessage responseMessage = await client.PostAsync(URL, stringContent);
+
+                string responseBody = await responseMessage.Content.ReadAsStringAsync();
                 Console.WriteLine(responseBody);
                 return new OkObjectResult(responseBody);
 
