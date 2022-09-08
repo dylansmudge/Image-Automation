@@ -19,17 +19,17 @@ namespace Image
 
     public class GetPGRList
     {
-        public List<Item> items { get; set; }
+        public List<Items> items { get; set; }
         public string nextToken { get; set; }
     }
 
-    public class Image
+    public class Images
     {
         public string type { get; set; }
         public string uniformResourceIdentifier { get; set; }
     }
 
-    public class Item
+    public class Items
     {
         public Upc upc { get; set; }
         public List<Mmr> mmr { get; set; }
@@ -47,7 +47,7 @@ namespace Image
 
     public class Upc
     {
-        public List<Image> images { get; set; }
+        public List<Images> images { get; set; }
     }
 
 

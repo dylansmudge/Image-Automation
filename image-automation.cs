@@ -34,11 +34,28 @@ namespace Image
                 var content = await new StreamReader(req.Body).ReadToEndAsync();
                 StringContent stringContent = new StringContent(content);
                 HttpResponseMessage responseMessage = await client.PostAsync(URL, stringContent);
-
                 string responseBody = await responseMessage.Content.ReadAsStringAsync();
-                Console.WriteLine(responseBody);
-                return new OkObjectResult(responseBody);
+                Root root = JsonConvert.DeserializeObject<Root>(responseBody);
+                Console.WriteLine(root.data.getPGRList.nextToken);
+                string nextToken = root.data.getPGRList.nextToken;
 
+                foreach(var items in root.data.getPGRList.items)
+                    {
+                        foreach(var image in items.upc.images)
+                        {// Returns images of type A1N1 along with the URI of each
+                            if (image.type != null) 
+                            {
+                                Console.WriteLine("\n Image is of type: " + image.type);
+                                Console.WriteLine(image.type.Contains("A1N1"));
+                                Console.WriteLine(" Image is of uri: " + image.uniformResourceIdentifier + "\n");
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                   }
+                return new OkObjectResult("Next Token is " + nextToken);
             }
             catch(HttpRequestException e)
             {
