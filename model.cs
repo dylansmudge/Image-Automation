@@ -11,7 +11,7 @@ using System.Collections.Generic;
 
 namespace Image
 {
-// Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+ //Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class Data
     {
         public GetPGRList getPGRList { get; set; }
