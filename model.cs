@@ -17,6 +17,16 @@ namespace Image
         public GetPGRList getPGRList { get; set; }
     }
 
+        public class Error
+    {
+        public List<object> path { get; set; }
+        public object data { get; set; }
+        public string errorType { get; set; }
+        public object errorInfo { get; set; }
+        public List<Location> locations { get; set; }
+        public string message { get; set; }
+    }
+
     public class GetPGRList
     {
         public List<Items> items { get; set; }
@@ -35,6 +45,13 @@ namespace Image
         public List<Mmr> mmr { get; set; }
     }
 
+        public class Location
+    {
+        public int line { get; set; }
+        public int column { get; set; }
+        public object sourceName { get; set; }
+    }
+
     public class Mmr
     {
         public string goldenRecordNumberMmrId { get; set; }
@@ -43,6 +60,7 @@ namespace Image
     public class Root
     {
         public Data data { get; set; }
+        public List<Error> errors { get; set; }
     }
 
     public class Upc

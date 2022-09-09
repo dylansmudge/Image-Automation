@@ -44,34 +44,56 @@ namespace Image
                 //Deserialize the response body so that we can identify items uniquely.
                 Root root = JsonConvert.DeserializeObject<Root>(responseBody);
                 string nextToken = root.data.getPGRList.nextToken;
-                foreach(var items in root.data.getPGRList.items)
+                List<String> errors = new List<String>();
+                try 
                 {
-                    foreach(var mmr in items.mmr)
+                    foreach(var items in root.data.getPGRList.items)
                     {
-                        if (mmr.goldenRecordNumberMmrId != null)
+                        foreach(var mmr in items.mmr)
                         {
-                            foreach(var image in items.upc.images)
-                            {// Returns images of type A1N1 along with the URI of each
-                                if (image.type.Contains("A1N1") && !goldenRecordNumberMmrIdList.Contains(mmr.goldenRecordNumberMmrId) && !imagesList.Contains(image.uniformResourceIdentifier))
-                                {
-                                    goldenRecordNumberMmrIdList.Add(mmr.goldenRecordNumberMmrId);
-                                    imagesList.Add(image.type);
-                                    imagesList.Add(image.uniformResourceIdentifier);
-                                    imagesList.Add(mmr.goldenRecordNumberMmrId);
-                                    Console.WriteLine("\n Image is of type: " + image.type);
-                                    Console.WriteLine(" Is the image of type A1N1: " + image.type.Contains("A1N1"));
-                                    Console.WriteLine(" Image is of uri: " + image.uniformResourceIdentifier);
-                                    Console.WriteLine("Golden record number id is: " + mmr.goldenRecordNumberMmrId + "\n");
-                                    /*using (var downloadClient = new WebClient())
-                                        {
-                                            Stream stream = downloadClient.OpenRead(image.uniformResourceIdentifier);
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), mmr.goldenRecordNumberMmrId + ".jpg");
-                                        }*/
+                            if (mmr.goldenRecordNumberMmrId != null)
+                            {
+                                foreach(var image in items.upc.images)
+                                {// Returns images of type A1N1 along with the URI of each
+                                    if (image.type.Contains("A1N1") 
+                                        && !goldenRecordNumberMmrIdList.Contains(mmr.goldenRecordNumberMmrId) 
+                                        && !imagesList.Contains(image.uniformResourceIdentifier))
+                                    {
+                                        goldenRecordNumberMmrIdList.Add(mmr.goldenRecordNumberMmrId);
+                                        imagesList.Add(image.type);
+                                        imagesList.Add(image.uniformResourceIdentifier);
+                                        imagesList.Add(mmr.goldenRecordNumberMmrId);
+                                        Console.WriteLine("\n Image is of type: " + image.type);
+                                        Console.WriteLine(" Is the image of type A1N1: " + image.type.Contains("A1N1"));
+                                        Console.WriteLine(" Image is of uri: " + image.uniformResourceIdentifier);
+                                        Console.WriteLine("Golden record number id is: " + mmr.goldenRecordNumberMmrId + "\n");
+                                        string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
+                                        using (var downloadClient = new WebClient())
+                                            {
+                                                try 
+                                                {
+                                                    downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName);
+                                                }
+                                                catch (WebException ex)
+                                                {
+                                                    Console.WriteLine(ex);
+                                                }
+                                            }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                catch 
+                {
+                    foreach(var err in root.errors)
+                    {
+                        errors.Add(err.ToString());
+                    }
+
+                }
+                Console.WriteLine("next token is " + nextToken);
                 return new OkObjectResult(imagesList);
                 //return new OkObjectResult("next token is " + nextToken);
             }
