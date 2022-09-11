@@ -16,12 +16,9 @@ namespace Image
 {
     public class ImageAutomation
     {
-
         Uri URL =  new Uri("https://datafabric.coke.com");
         string APIKey = Environment.GetEnvironmentVariable("APIKey");
-
         private readonly HttpClient client = new HttpClient();
-
 
         [FunctionName("PostImage")]
         public async Task<IActionResult> PostImage(
