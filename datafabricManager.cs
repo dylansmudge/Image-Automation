@@ -13,24 +13,19 @@ namespace Image
         Uri URL = new Uri("https://datafabric.coke.com");
         string APIKey = Environment.GetEnvironmentVariable("APIKey");
         private readonly HttpClient client = new HttpClient();
-        public static string getBetween(string strSource, string strStart, string strEnd)
+
+        public DataFabricManager()
         {
-            if (strSource.Contains(strStart) && strSource.Contains(strEnd))
-            {
-                int Start, End;
-                Start = strSource.IndexOf(strStart, 0) + strStart.Length;
-                End = strSource.IndexOf(strEnd, Start);
-                return strSource.Substring(Start, End - Start);
-            }
-            return "";
+            client.BaseAddress = URL;
+            client.DefaultRequestHeaders.Add("x-api-key", APIKey);
         }
 
         public String dataFabricQuery(String content, string after = "")
         {
             List<String> imagesList = new List<String>();
             // Call asynchronous network methods in a try/catch block to handle exceptions.
-            client.BaseAddress = URL;
-            client.DefaultRequestHeaders.Add("x-api-key", APIKey);
+
+
             StringContent stringContent = new StringContent(content);
             
             //Synchronous call of client POST
@@ -65,7 +60,7 @@ namespace Image
                                 //IF image contains A1N1 suffix 
                                 //AND golden id is not in golden id list 
                                 //AND image uri not in images list yet
-                                if (image.type.Contains("A1N1")
+                                if (image.type.Contains("A1N1 - Front")
                                     && !goldenRecordNumberMmrIdList.Contains(mmr.goldenRecordNumberMmrId)
                                     && !imagesList.Contains(image.uniformResourceIdentifier))
                                 {
@@ -109,7 +104,6 @@ namespace Image
 
             }
             after = root.data.getPGRList.nextToken;
-            Console.WriteLine("next token is " + after);
             return after;
         }
         public void dataFabricPaging(String content)
@@ -123,15 +117,11 @@ namespace Image
                 }
                 else
                 {
-                    string input = content;
-                    string pattern = "after: \\\".*\\\"";
-                    string replacement = "after: \"" + token + "\"";
-                    string result = Regex.Replace(input, pattern, replacement);
-                    token = dataFabricQuery(result);
+                    string replacement = "after: " + "\\\"" + token + "\\\"" ;
+                    string output = "{\"query\":\"{\\n    getPGRList (count:500, " + replacement + "){\\n    items{\\n        upc {\\n        images {\\n            type\\n            uniformResourceIdentifier\\n        }\\n        }\\n        mmr{\\n        goldenRecordNumberMmrId\\n        }\\n    }\\n        nextToken\\n    }\\n} \"}";
+                    token = dataFabricQuery(output);
                 }
-
             }
         }
     }
-
 }

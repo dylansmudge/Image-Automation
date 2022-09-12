@@ -12,7 +12,7 @@ namespace Image
 
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.Services.AddScoped<DataFabricManager>();
+            builder.Services.AddSingleton<DataFabricManager>();
         }
 
     }
