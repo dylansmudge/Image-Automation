@@ -3,7 +3,6 @@
   "Values": {
     "AzureWebJobsStorage": "",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "APIKey" : "da2-oychlsjubbh5be2htpxyc6eeoi",
-    "nextToken": " "
+    "APIKey" : "da2-oychlsjubbh5be2htpxyc6eeoi"
   }
 }

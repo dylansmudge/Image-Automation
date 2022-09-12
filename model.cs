@@ -11,13 +11,13 @@ using System.Collections.Generic;
 
 namespace Image
 {
- //Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+    //Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class Data
     {
         public GetPGRList getPGRList { get; set; }
     }
 
-        public class Error
+    public class Error
     {
         public List<object> path { get; set; }
         public object data { get; set; }
@@ -45,7 +45,7 @@ namespace Image
         public List<Mmr> mmr { get; set; }
     }
 
-        public class Location
+    public class Location
     {
         public int line { get; set; }
         public int column { get; set; }
