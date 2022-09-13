@@ -106,18 +106,10 @@ namespace Image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
 
-                                    var httpStream = new HttpClient();
+                                    //var httpStream = new HttpClient();
                                 
-                                    Stream stream = await httpStream.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
-                                    
-
-                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                    blobHttpHeader.ContentType = "image/jpg";
-
-                                    await blobClient.SyncCopyFromUriAsync(new Uri(image.uniformResourceIdentifier));
+                                    //Stream stream = await httpStream.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
                 
-                                    /*
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
@@ -131,9 +123,14 @@ namespace Image
                                         {
                                             Console.WriteLine(ex);
                                         }
+                                    }
 
+                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
+                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                    blobHttpHeader.ContentType = "image/jpg";
 
-                                    }*/
+                                    await blobClient.UploadAsync(localFilePath, blobHttpHeader);
 
                                 }
                             }
@@ -144,11 +141,9 @@ namespace Image
             //Catch any errors in our own API call
             catch
             {
-                
                 foreach (var err in root.errors)
                 {
                     errors.Add(err.ToString());
-                    Console.WriteLine(err.ToString());
                 }
 
             }
@@ -160,7 +155,13 @@ namespace Image
         Function used to paginate through the datafabric. 
         Runs through while the token is equal to something. 
         */
-        public async Task dataFabricPaging(String content)
+        public async 
+        /*
+        Function used to paginate through the datafabric. 
+        Runs through while the token is equal to something. 
+        */
+        Task
+dataFabricPaging(String content)
         {
             string token = "";
             int count  = 0;
