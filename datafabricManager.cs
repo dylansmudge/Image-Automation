@@ -106,10 +106,8 @@ namespace Image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
 
-                                    //var httpStream = new HttpClient();
-                                
-                                    //Stream stream = await httpStream.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
-                
+                                    //Stream stream = await client.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
+                                    
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
@@ -126,11 +124,11 @@ namespace Image
                                     }
 
                                     string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
-                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                    BlobClient blobClient =  _photoBlobContainerClient.GetBlobClient(fileName);
                                     BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                     blobHttpHeader.ContentType = "image/jpg";
 
-                                    await blobClient.UploadAsync(localFilePath, blobHttpHeader);
+                                    await blobClient.UploadAsync("https://tccc-f5-tenant1-cdnep02.azureedge.net/api/public/content/00049000054828_A1N1", blobHttpHeader);
 
                                 }
                             }
@@ -165,7 +163,7 @@ dataFabricPaging(String content)
         {
             string token = "";
             int count  = 0;
-            while (token != null)
+            while (token != null && count < 8)
             {
                 /*
                 On the first iteration, the token is equal to an empty string, 
@@ -183,10 +181,9 @@ dataFabricPaging(String content)
                     string output = "{\"query\":\"{\\n    getPGRList (count:500, " + replacement + "){\\n    items{\\n        upc {\\n        images {\\n            type\\n            uniformResourceIdentifier\\n        }\\n        }\\n        mmr{\\n        goldenRecordNumberMmrId\\n        }\\n    }\\n        nextToken\\n    }\\n} \"}";
                     token = await dataFabricQuery(output);
                     count ++;
-                    Console.WriteLine("Token is" + token);
                     Console.WriteLine("Number of 500-Count calls: " + count);
                 }
-            }
+            } 
         }
     }
 }
