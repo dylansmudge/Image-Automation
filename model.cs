@@ -67,7 +67,4 @@ namespace Image
     {
         public List<Images> images { get; set; }
     }
-
-
-
 }

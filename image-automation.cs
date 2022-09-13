@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -8,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Image
 {
@@ -22,8 +22,13 @@ namespace Image
             _dataFabricManager = dataFabricManager;
         }
 
+        /*
+        HTTP request to POST and download the photos. Requires the datafabric class for 
+        the logic.
+        */
+
         [FunctionName("PostImage")]
-        public IActionResult PostImage(
+        public async Task<IActionResult> PostImage(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
@@ -38,8 +43,8 @@ namespace Image
                 }
                 client.DefaultRequestHeaders.Add("x-api-key", APIKey);
                 //Read contents of API callback
-                string content = new StreamReader(req.Body).ReadToEnd();
-                _dataFabricManager.dataFabricPaging(content);
+                string content = await new StreamReader(req.Body).ReadToEndAsync();
+                await _dataFabricManager.dataFabricPaging(content);
                 return new NoContentResult();
             }
             catch (HttpRequestException e)

@@ -1,8 +1,11 @@
 {
   "IsEncrypted": false,
   "Values": {
-    "AzureWebJobsStorage": "",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "dotnet",
-    "APIKey" : "da2-oychlsjubbh5be2htpxyc6eeoi"
+    "APIKey" : "da2-oychlsjubbh5be2htpxyc6eeoi",
+    "BlobUri": "http://127.0.0.1:10000/devstoreaccount1/image-automation",
+    "AccountKey": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==",
+    "AccountName": "devstoreaccount1"
   }
 }
