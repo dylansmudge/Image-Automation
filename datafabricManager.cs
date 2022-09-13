@@ -106,8 +106,18 @@ namespace Image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
 
-                                    //Stream stream = await client.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
+                                    var httpStream = new HttpClient();
+                                
+                                    Stream stream = await httpStream.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
                                     
+
+                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                    blobHttpHeader.ContentType = "image/jpg";
+
+                                    await blobClient.SyncCopyFromUriAsync(new Uri(image.uniformResourceIdentifier));
+                
+
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
@@ -121,14 +131,9 @@ namespace Image
                                         {
                                             Console.WriteLine(ex);
                                         }
+
+
                                     }
-
-                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
-                                    BlobClient blobClient =  _photoBlobContainerClient.GetBlobClient(fileName);
-                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                    blobHttpHeader.ContentType = "image/jpg";
-
-                                    await blobClient.UploadAsync("https://tccc-f5-tenant1-cdnep02.azureedge.net/api/public/content/00049000054828_A1N1", blobHttpHeader);
 
                                 }
                             }
@@ -139,9 +144,11 @@ namespace Image
             //Catch any errors in our own API call
             catch
             {
+                
                 foreach (var err in root.errors)
                 {
                     errors.Add(err.ToString());
+                    Console.WriteLine(err.ToString());
                 }
 
             }
@@ -153,17 +160,11 @@ namespace Image
         Function used to paginate through the datafabric. 
         Runs through while the token is equal to something. 
         */
-        public async 
-        /*
-        Function used to paginate through the datafabric. 
-        Runs through while the token is equal to something. 
-        */
-        Task
-dataFabricPaging(String content)
+        public async Task dataFabricPaging(String content)
         {
             string token = "";
             int count  = 0;
-            while (token != null && count < 8)
+            while (token != null)
             {
                 /*
                 On the first iteration, the token is equal to an empty string, 
@@ -181,9 +182,10 @@ dataFabricPaging(String content)
                     string output = "{\"query\":\"{\\n    getPGRList (count:500, " + replacement + "){\\n    items{\\n        upc {\\n        images {\\n            type\\n            uniformResourceIdentifier\\n        }\\n        }\\n        mmr{\\n        goldenRecordNumberMmrId\\n        }\\n    }\\n        nextToken\\n    }\\n} \"}";
                     token = await dataFabricQuery(output);
                     count ++;
+                    Console.WriteLine("Token is" + token);
                     Console.WriteLine("Number of 500-Count calls: " + count);
                 }
-            } 
+            }
         }
     }
 }
