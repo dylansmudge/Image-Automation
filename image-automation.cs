@@ -45,7 +45,7 @@ namespace Image
                 //Read contents of API callback
                 string content = await new StreamReader(req.Body).ReadToEndAsync();
                 await _dataFabricManager.dataFabricPaging(content);
-                return new NoContentResult();
+                return new OkObjectResult(content);
             }
             catch (HttpRequestException e)
             {

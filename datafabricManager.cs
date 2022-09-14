@@ -105,25 +105,15 @@ namespace Image
                                     //Create a filename as the golden id of the image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
-
-                                    var httpStream = new HttpClient();
-                                
-                                    Stream stream = await httpStream.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
-                                    
-
-                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                    blobHttpHeader.ContentType = "image/jpg";
-
-                                    await blobClient.SyncCopyFromUriAsync(new Uri(image.uniformResourceIdentifier));
+                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
                 
-                                    /*
+                                    
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
                                         {
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier),
-                                            "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName);
+                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), localFilePath);
+
                                         }
                                         //Catch any errors from the datafabric. 
                                         //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
@@ -131,9 +121,12 @@ namespace Image
                                         {
                                             Console.WriteLine(ex);
                                         }
+                                    }
+                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                    blobHttpHeader.ContentType = "image/jpg";
+                                    await blobClient.UploadAsync(localFilePath, blobHttpHeader);
 
-
-                                    }*/
 
                                 }
                             }
@@ -148,7 +141,6 @@ namespace Image
                 foreach (var err in root.errors)
                 {
                     errors.Add(err.ToString());
-                    Console.WriteLine(err.ToString());
                 }
 
             }
@@ -162,9 +154,9 @@ namespace Image
         */
         public async Task dataFabricPaging(String content)
         {
-            string token = "";
+            string token = " ";
             int count  = 0;
-            while (token != null)
+            while (token != null && count < 5)
             {
                 /*
                 On the first iteration, the token is equal to an empty string, 
