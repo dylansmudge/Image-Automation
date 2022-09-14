@@ -105,14 +105,14 @@ namespace Image
                                     //Create a filename as the golden id of the image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
-                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
+                                    String path = Path.Combine(Path.GetTempPath(), fileName);
                 
                                     
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
                                         {
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), localFilePath);
+                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
 
                                         }
                                         //Catch any errors from the datafabric. 
@@ -125,8 +125,7 @@ namespace Image
                                     BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
                                     BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                     blobHttpHeader.ContentType = "image/jpg";
-                                    await blobClient.UploadAsync(localFilePath, blobHttpHeader);
-
+                                    await blobClient.UploadAsync(path, blobHttpHeader);
 
                                 }
                             }
