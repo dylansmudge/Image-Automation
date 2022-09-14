@@ -83,12 +83,20 @@ namespace Image
             {
                 Uri imagelink = new Uri("https://tccc-f5-tenant1-cdnep02.azureedge.net/api/public/content/00049000054828_A1N1");
                 HttpClient httpClient = new HttpClient();
-                Stream stream = await httpClient.GetStreamAsync(imagelink).ConfigureAwait(false);
+                Stream stream = await httpClient.GetStreamAsync(imagelink);
+
+
+
+                MemoryStream memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                memoryStream.Seek(0, SeekOrigin.Begin);
+
+
                 //Read contents of API callback
                 BlobClient blobClient =  _photoBlobContainerClient.GetBlobClient("144706.jpg");
                 BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                 blobHttpHeader.ContentType = "image/jpg";
-                await _photoBlobClient.UploadAsync(stream);
+                await _photoBlobClient.UploadAsync(memoryStream, blobHttpHeader);
                 return new NoContentResult();
             }
             catch (HttpRequestException e)
