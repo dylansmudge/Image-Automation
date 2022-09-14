@@ -105,15 +105,14 @@ namespace Image
                                     //Create a filename as the golden id of the image
                                     string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
                                     //Download uri to selected path with filename
-
+                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
                                     //Stream stream = await client.GetStreamAsync(new Uri(image.uniformResourceIdentifier));
                                     
                                     using (var downloadClient = new WebClient())
                                     {
                                         try
                                         {
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier),
-                                            "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName);
+                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), localFilePath);
                                         }
                                         //Catch any errors from the datafabric. 
                                         //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
@@ -123,12 +122,12 @@ namespace Image
                                         }
                                     }
 
-                                    string localFilePath = "/Users/dylancarlyle/Documents/Image Automation/Image-Automation/Downloaded Images/" + fileName;
-                                    BlobClient blobClient =  _photoBlobContainerClient.GetBlobClient(fileName);
+
+                                    //_photoBlobContainerClient.GetBlobClient(fileName);
                                     BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                     blobHttpHeader.ContentType = "image/jpg";
 
-                                    await blobClient.UploadAsync("https://tccc-f5-tenant1-cdnep02.azureedge.net/api/public/content/00049000054828_A1N1", blobHttpHeader);
+                                    await _photoBlobClient.UploadAsync(localFilePath, blobHttpHeader);
 
                                 }
                             }
