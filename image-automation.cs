@@ -12,8 +12,10 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage;
 using System.Net;
+using System.Drawing;
+using System.Text;
 
-namespace Image
+namespace Images
 {
     public class ImageAutomation
     {
@@ -82,22 +84,41 @@ namespace Image
             try
             {
                 Uri imagelink = new Uri("https://tccc-f5-tenant1-cdnep02.azureedge.net/api/public/content/00049000054828_A1N1");
+                
                 HttpClient httpClient = new HttpClient();
-                Stream stream = await httpClient.GetStreamAsync(imagelink);
+                httpClient.BaseAddress = URL;
+                httpClient.DefaultRequestHeaders.Add("x-api-key", APIKey);
+                httpClient.Timeout = TimeSpan.FromSeconds(10);
 
+                Stream stream = await httpClient.GetStreamAsync(imagelink).ConfigureAwait(false); 
 
+                StreamReader streamReader = new StreamReader(stream);
+                
+                string imageString = streamReader.ReadToEnd();
+                int streamLength = imageString.Length;
 
                 MemoryStream memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                memoryStream.Seek(0, SeekOrigin.Begin);
+                //StreamWriter streamWriter = new StreamWriter(memoryStream);
+                //streamWriter.Write(imageString);
 
+                
+                //BinaryReader reader = new BinaryReader(stream);
+                byte[] byteArray = Encoding.ASCII.GetBytes(imageString);
+                memoryStream.Write(byteArray);
+                //reader.Read(buffer, 0, buffer.Length);
+
+                //streamWriter.Flush();
+                memoryStream.Position = 0;
+                
+                //BinaryData binaryData = new BinaryData(buffer);
+                //Stream image = binaryData.ToStream();
 
                 //Read contents of API callback
                 BlobClient blobClient =  _photoBlobContainerClient.GetBlobClient("144706.jpg");
                 BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                 blobHttpHeader.ContentType = "image/jpg";
-                await _photoBlobClient.UploadAsync(memoryStream, blobHttpHeader);
-                return new NoContentResult();
+                await _photoBlobClient.UploadAsync(memoryStream);
+                return new OkObjectResult(stream);
             }
             catch (HttpRequestException e)
             {

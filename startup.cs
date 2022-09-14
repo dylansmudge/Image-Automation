@@ -3,9 +3,9 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 
-[assembly: FunctionsStartup(typeof(Image.Startup))]
+[assembly: FunctionsStartup(typeof(Images.Startup))]
 
-namespace Image
+namespace Images
 {
     public class Startup : FunctionsStartup
     {

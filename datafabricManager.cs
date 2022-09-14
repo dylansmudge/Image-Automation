@@ -12,7 +12,7 @@ using Azure.Storage;
 using Microsoft.AspNetCore.Http;
 using System.IO;
 
-namespace Image
+namespace Images
 {
     public class DataFabricManager
     {
