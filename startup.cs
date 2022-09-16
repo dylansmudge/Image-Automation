@@ -11,6 +11,7 @@ namespace Image
     {
         public override void Configure(IFunctionsHostBuilder builder)
         {
+            builder.Services.AddLogging();
             builder.Services.AddSingleton<DataFabricManager>();
         }
     }

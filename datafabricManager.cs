@@ -11,6 +11,9 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Azure.Storage;
 using Microsoft.AspNetCore.Http;
 using System.IO;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Image
 {
@@ -24,24 +27,28 @@ namespace Image
         private readonly BlobContainerClient _photoBlobContainerClient;
         private readonly BlobClient _photoBlobClient;
         private readonly HttpClient client = new HttpClient();
+       private readonly ILogger log;
 
         /*
         Initialise the base address and headers. 
         As we are making multiple GraphQL queries this is essential.
         */
-        public DataFabricManager()
+        public DataFabricManager(ILogger<DataFabricManager> logger)
         {
             client.BaseAddress = URL;
             client.DefaultRequestHeaders.Add("x-api-key", APIKey);
 
-            StorageSharedKeyCredential storageSharedKeyCredential = 
+            StorageSharedKeyCredential storageSharedKeyCredential =
             new StorageSharedKeyCredential(AccountName, AccountKey);
 
-            this._photoBlobContainerClient = 
+            this._photoBlobContainerClient =
             new BlobContainerClient(new Uri(Uri), storageSharedKeyCredential);
 
-            this._photoBlobClient = 
+            this._photoBlobClient =
             new BlobClient(new Uri(Uri), storageSharedKeyCredential);
+
+            this.log = logger;
+
         }
 
         /*
@@ -55,14 +62,14 @@ namespace Image
 
 
             StringContent stringContent = new StringContent(content);
-            
+
             //Synchronous call of client POST
             var task = Task.Run(() => client.PostAsync(URL, stringContent));
             task.Wait();
             HttpResponseMessage responseMessage = task.Result;
 
             //Synchronous call of response Read
-            var resTask =  Task.Run(() => responseMessage.Content.ReadAsStringAsync());
+            var resTask = Task.Run(() => responseMessage.Content.ReadAsStringAsync());
             resTask.Wait();
             string responseBody = resTask.Result;
 
@@ -73,77 +80,28 @@ namespace Image
             List<String> errors = new List<String>();
             try
             {
+                log.LogInformation("Beginning parse");
                 //Grab items
-                foreach (var items in root.data.getPGRList.items)
+                foreach (var items in root.data.getMMRList.items)
                 {
-                    //Grab mmr in items
-                    foreach (var mmr in items.mmr)
+                    if (items.goldenRecordNumberMmrId != null && items != null)
                     {
-                        //If mmr is something
-                        if (mmr.goldenRecordNumberMmrId != null)
-                        {
-                            //Grab images in items
-                            foreach (var image in items.upc.images)
-                            {
-                                //IF image contains A1N1 suffix 
-                                //AND golden id is not in golden id list 
-                                //AND image uri not in images list yet
-                                if (image.type.Contains("A1N1")
-                                    && !goldenRecordNumberMmrIdList.Contains(mmr.goldenRecordNumberMmrId)
-                                    && !imagesList.Contains(image.uniformResourceIdentifier))
-                                {
-                                    //Add golden id to golden id list
-                                    goldenRecordNumberMmrIdList.Add(mmr.goldenRecordNumberMmrId);
-                                    //Add image type, uri and golden id to imageslist
-                                    imagesList.Add(image.type);
-                                    imagesList.Add(image.uniformResourceIdentifier);
-                                    imagesList.Add(mmr.goldenRecordNumberMmrId);
-                                    Console.WriteLine("\n Image is of type: " + image.type);
-                                    Console.WriteLine(" Is the image of type A1N1: " + image.type.Contains("A1N1 "));
-                                    Console.WriteLine(" Image is of uri: " + image.uniformResourceIdentifier);
-                                    Console.WriteLine("Golden record number id is: " + mmr.goldenRecordNumberMmrId + "\n");
-                                    //Create a filename as the golden id of the image
-                                    string fileName = mmr.goldenRecordNumberMmrId + ".jpg";
-                                    //Download uri to selected path with filename
-                                    String path = Path.Combine(Path.GetTempPath(), fileName);
-                
-                                    
-                                    using (var downloadClient = new WebClient())
-                                    {
-                                        try
-                                        {
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
-
-                                        }
-                                        //Catch any errors from the datafabric. 
-                                        //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
-                                        catch (WebException ex)
-                                        {
-                                            Console.WriteLine(ex);
-                                        }
-                                    }
-                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                    blobHttpHeader.ContentType = "image/jpg";
-                                    await blobClient.UploadAsync(path, blobHttpHeader);
-
-                                }
-                            }
-                        }
+                        await dataFabricItemParse(items, imagesList);
                     }
                 }
             }
+
             //Catch any errors in our own API call
             catch
             {
-                
+
                 foreach (var err in root.errors)
                 {
                     errors.Add(err.ToString());
                 }
 
             }
-            after = root.data.getPGRList.nextToken;
+            after = root.data.getMMRList.nextToken;
             return after;
         }
 
@@ -153,9 +111,10 @@ namespace Image
         */
         public async Task dataFabricPaging(String content)
         {
-            string token = " ";
-            int count  = 0;
-            while (token != null && count < 5)
+            string token = "";
+            int count = 0;
+            Stopwatch stopwatch = new Stopwatch();
+            while (token != null)
             {
                 /*
                 On the first iteration, the token is equal to an empty string, 
@@ -163,20 +122,106 @@ namespace Image
                 */
                 if (token == "")
                 {
+
+                    stopwatch.Start();
                     token = await dataFabricQuery(content);
-                    count ++;
-                    Console.WriteLine("Number of 500-Count calls: " + count);
+                    count++;
+                    log.LogInformation("Number of 500-Count calls: " + count);
+                    log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
                 }
                 else
                 {
-                    string replacement = "after: " + "\\\"" + token + "\\\"" ;
-                    string output = "{\"query\":\"{\\n    getPGRList (count:500, " + replacement + "){\\n    items{\\n        upc {\\n        images {\\n            type\\n            uniformResourceIdentifier\\n        }\\n        }\\n        mmr{\\n        goldenRecordNumberMmrId\\n        }\\n    }\\n        nextToken\\n    }\\n} \"}";
+                    string replacement = "after: " + "\\\"" + token + "\\\"";
+                    string output = "{\"query\":\"{\\n  getMMRList(count: 500, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
                     token = await dataFabricQuery(output);
-                    count ++;
-                    Console.WriteLine("Token is" + token);
-                    Console.WriteLine("Number of 500-Count calls: " + count);
+                    count++;
+                    log.LogInformation("Token is" + token);
+                    log.LogInformation("Number of 500-Count calls: " + count);
+                    log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
                 }
             }
         }
-    }
-}
+
+        public async Task dataFabricItemParse(Items items, List<String> imagesList)
+        {
+            if (items.pgr == null || items.pgr.upc == null)
+            {
+                log.LogInformation("UPC is null");
+            }
+            else
+            {
+                foreach (var itemReference in items.pgr.upc.itemReferences)
+                {
+                    foreach (var image in itemReference.referencedUPC.images)
+                    {
+                        if (image.type.Contains("A1N1"))
+                        {
+                            imagesList.Add(image.uniformResourceIdentifier);
+                            string fileName = items.goldenRecordNumberMmrId + ".jpg";
+                            String path = Path.Combine(Path.GetTempPath(), fileName);
+                            log.LogInformation("image type is {image.type}", image.type);
+                            log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
+                            log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
+
+                            using (var downloadClient = new WebClient())
+
+                                try
+                                {
+                                    downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
+
+                                }
+                                //Catch any errors from the datafabric. 
+                                //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
+                                catch (WebException ex)
+                                {
+                                    log.LogInformation("ex is {ex}", ex.ToString());
+                                    break;
+                                }
+                            BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                            BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                            blobHttpHeader.ContentType = "image/jpg";
+                            await blobClient.UploadAsync(path, blobHttpHeader);
+
+
+                        }
+                        else
+                        {
+                            foreach (var image1 in items.pgr.upc.images)
+                                {
+                                    if (image1.type.Contains("A1N1"))
+                                    {
+                                        imagesList.Add(image1.uniformResourceIdentifier);
+                                        string fileName = items.goldenRecordNumberMmrId + ".jpg";
+                                        String path = Path.Combine(Path.GetTempPath(), fileName);
+                                        log.LogInformation("type is {image1.type}", image1.type);
+                                        log.LogInformation("uri is {image1.uniformResourceIdentifier}", image1.uniformResourceIdentifier);
+                                        log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
+                                        using (var downloadClient = new WebClient())
+                                            try
+                                            {
+                                                downloadClient.DownloadFile(new Uri(image1.uniformResourceIdentifier), path);
+
+                                            }
+                                            //Catch any errors from the datafabric. 
+                                            //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
+                                            catch (WebException ex)
+                                            {
+                                                log.LogInformation("Exception is {ex}",ex);
+                                                break;
+                                            }
+                                        BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                        BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                        blobHttpHeader.ContentType = "image/jpg";
+                                        await blobClient.UploadAsync(path, blobHttpHeader);
+
+                                    }
+                                }
+                        }
+                    }
+                }
+
+            }
+
+        }
+    } // End of Class
+} //End of Namespace

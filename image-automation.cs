@@ -49,8 +49,8 @@ namespace Image
             }
             catch (HttpRequestException e)
             {
-                Console.WriteLine("\nException Caught!");
-                Console.WriteLine("Message :{0} ", e.Message);
+                log.LogError("\nException Caught!");
+                log.LogError("Message :{0} ", e.Message);
                 return new BadRequestObjectResult(e.Message);
             }
         }

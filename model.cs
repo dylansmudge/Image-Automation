@@ -11,10 +11,10 @@ using System.Collections.Generic;
 
 namespace Image
 {
-    //Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
+    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class Data
     {
-        public GetPGRList getPGRList { get; set; }
+        public GetMMRList getMMRList { get; set; }
     }
 
     public class Error
@@ -27,7 +27,7 @@ namespace Image
         public string message { get; set; }
     }
 
-    public class GetPGRList
+    public class GetMMRList
     {
         public List<Items> items { get; set; }
         public string nextToken { get; set; }
@@ -37,12 +37,19 @@ namespace Image
     {
         public string type { get; set; }
         public string uniformResourceIdentifier { get; set; }
+        public string fileEffectiveStartDate { get; set; }
     }
 
     public class Items
     {
-        public Upc upc { get; set; }
-        public List<Mmr> mmr { get; set; }
+        public string goldenRecordNumberMmrId { get; set; }
+        public Pgr pgr { get; set; }
+    }
+
+    public class ItemReference
+    {
+        public string referencedItem { get; set; }
+        public ReferencedUPC referencedUPC { get; set; }
     }
 
     public class Location
@@ -52,9 +59,14 @@ namespace Image
         public object sourceName { get; set; }
     }
 
-    public class Mmr
+    public class Pgr
     {
-        public string goldenRecordNumberMmrId { get; set; }
+        public Upc upc { get; set; }
+    }
+
+    public class ReferencedUPC
+    {
+        public List<Images> images { get; set; }
     }
 
     public class Root
@@ -66,5 +78,8 @@ namespace Image
     public class Upc
     {
         public List<Images> images { get; set; }
+        public List<ItemReference> itemReferences { get; set; }
     }
+
+
 }
