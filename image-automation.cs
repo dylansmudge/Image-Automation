@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using System.Net.Http;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 namespace Image
 {
@@ -20,6 +21,28 @@ namespace Image
         public ImageAutomation(DataFabricManager dataFabricManager)
         {
             _dataFabricManager = dataFabricManager;
+        }
+
+        [FunctionName("DurableFunctionsOrchestrationCSharp1")]
+        public static async Task<List<string>> RunOrchestrator(
+            [OrchestrationTrigger] IDurableOrchestrationContext context)
+        {
+            var outputs = new List<string>();
+            string input = context.GetInput<string>();
+
+            // Replace "hello" with the name of your Durable Activity Function.
+            outputs.Add(await context.CallActivityAsync<string>("DurableFunctionsOrchestrationCSharp1_Hello", input));
+
+            // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
+            return outputs;
+        }
+
+        [FunctionName("DurableFunctionsOrchestrationCSharp1_Hello")]
+        public async Task<string> SayHelloAsync([ActivityTrigger] string content, ILogger log)
+        {
+            await _dataFabricManager.dataFabricPaging(content);
+            log.LogInformation($"Saying hello to {content}.");
+            return $"Hello {content}!";
         }
 
         /*
@@ -53,6 +76,20 @@ namespace Image
                 log.LogError("Message :{0} ", e.Message);
                 return new BadRequestObjectResult(e.Message);
             }
+        }
+
+        [FunctionName("DurableFunctionsOrchestrationCSharp1_HttpStart")]
+        public static async Task<IActionResult> HttpStart(
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post")] HttpRequest req,
+            [DurableClient] IDurableOrchestrationClient starter,
+            ILogger log)
+        {
+            string content = await new StreamReader(req.Body).ReadToEndAsync();
+            // Function input comes from the request content.
+            string instanceId = await starter.StartNewAsync("DurableFunctionsOrchestrationCSharp1",null, content);
+
+            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
+            return starter.CreateCheckStatusResponse(req, instanceId);
         }
     }
 }

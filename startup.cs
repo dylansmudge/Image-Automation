@@ -2,6 +2,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
+using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
 [assembly: FunctionsStartup(typeof(Image.Startup))]
 
@@ -13,6 +14,8 @@ namespace Image
         {
             builder.Services.AddLogging();
             builder.Services.AddSingleton<DataFabricManager>();
+            builder.Services.AddHttpClient();
+            builder.Services.AddDurableClientFactory();
         }
     }
 }

@@ -27,7 +27,7 @@ namespace Image
         private readonly BlobContainerClient _photoBlobContainerClient;
         private readonly BlobClient _photoBlobClient;
         private readonly HttpClient client = new HttpClient();
-       private readonly ILogger log;
+        private readonly ILogger log;
 
         /*
         Initialise the base address and headers. 
@@ -150,43 +150,53 @@ namespace Image
             }
             else
             {
-                foreach (var itemReference in items.pgr.upc.itemReferences)
+                try
                 {
-                    foreach (var image in itemReference.referencedUPC.images)
+                    foreach (var itemReference in items.pgr.upc.itemReferences)
                     {
-                        if (image.type.Contains("A1N1"))
+                        foreach (var image in itemReference.referencedUPC.images)
                         {
-                            imagesList.Add(image.uniformResourceIdentifier);
-                            string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                            String path = Path.Combine(Path.GetTempPath(), fileName);
-                            log.LogInformation("image type is {image.type}", image.type);
-                            log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
-                            log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
+                            if (image.type.Contains("A1N1"))
+                            {
+                                imagesList.Add(image.uniformResourceIdentifier);
+                                string fileName = items.goldenRecordNumberMmrId + ".jpg";
+                                String path = Path.Combine(Path.GetTempPath(), fileName);
+                                log.LogInformation("image type is {image.type}", image.type);
+                                log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
+                                log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
 
-                            using (var downloadClient = new WebClient())
+                                using (var downloadClient = new WebClient())
 
+                                    try
+                                    {
+                                        downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
+                                    }
+                                    //Catch any errors from the datafabric. 
+                                    //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
+                                    catch (WebException ex)
+                                    {
+                                        log.LogInformation("ex is {ex}", ex.ToString());
+                                        break;
+                                    }
                                 try
                                 {
-                                    downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
-
-                                }
-                                //Catch any errors from the datafabric. 
-                                //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
-                                catch (WebException ex)
-                                {
-                                    log.LogInformation("ex is {ex}", ex.ToString());
+                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                    blobHttpHeader.ContentType = "image/jpg";
+                                    await blobClient.UploadAsync(path, blobHttpHeader);
                                     break;
                                 }
-                            BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                            BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                            blobHttpHeader.ContentType = "image/jpg";
-                            await blobClient.UploadAsync(path, blobHttpHeader);
+                                catch (Azure.RequestFailedException e)
+                                {
+                                    log.LogWarning("Request failed: {e}", e);
+                                    break;
+                                }
 
 
-                        }
-                        else
-                        {
-                            foreach (var image1 in items.pgr.upc.images)
+                            }
+                            else
+                            {
+                                foreach (var image1 in items.pgr.upc.images)
                                 {
                                     if (image1.type.Contains("A1N1"))
                                     {
@@ -206,19 +216,34 @@ namespace Image
                                             //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
                                             catch (WebException ex)
                                             {
-                                                log.LogInformation("Exception is {ex}",ex);
+                                                log.LogWarning("Exception is {ex}", ex);
                                                 break;
                                             }
-                                        BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                        BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                        blobHttpHeader.ContentType = "image/jpg";
-                                        await blobClient.UploadAsync(path, blobHttpHeader);
-
+                                        try
+                                        {
+                                            BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                            BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                                            blobHttpHeader.ContentType = "image/jpg";
+                                            await blobClient.UploadAsync(path, blobHttpHeader);
+                                            break;
+                                        }
+                                        catch (Azure.RequestFailedException e)
+                                        {
+                                            log.LogWarning("Request failed: {e}", e);
+                                            break;
+                                        }
                                     }
                                 }
+                            }
                         }
                     }
+
                 }
+                catch (System.NullReferenceException e)
+                {
+                    log.LogInformation("Item reference is is null: {e}", e);
+                }
+
 
             }
 
