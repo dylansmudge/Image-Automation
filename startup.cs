@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-[assembly: FunctionsStartup(typeof(Image.Startup))]
+[assembly: FunctionsStartup(typeof(Images.Startup))]
 
-namespace Image
+namespace Images
 {
     public class Startup : FunctionsStartup
     {

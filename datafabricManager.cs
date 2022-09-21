@@ -14,8 +14,10 @@ using System.IO;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using SkiaSharp;
+using System.Drawing;
 
-namespace Image
+namespace Images
 {
     public class DataFabricManager
     {
@@ -51,6 +53,8 @@ namespace Image
 
         }
 
+
+
         /*
         The main logic behind the query. We want to download the images with the Golden Id and then
         return the next token for sequential queries.
@@ -81,16 +85,27 @@ namespace Image
             try
             {
                 log.LogInformation("Beginning parse");
-                //Grab items
-                foreach (var items in root.data.getMMRList.items)
+                if (root.data != null)
                 {
-                    if (items.goldenRecordNumberMmrId != null && items != null)
+                    foreach (var items in root.data.getMMRList.items)
                     {
-                        await dataFabricItemParse(items, imagesList);
+                        if (items.goldenRecordNumberMmrId != null && items != null)
+                        {
+                            await dataFabricItemParse(items, imagesList);
+                        }
                     }
+
+                }
+                else
+                {
+                    after = root.data.getMMRList.nextToken;
+                    return after;
                 }
             }
-
+            catch (NullReferenceException e)
+            {
+                log.LogWarning("Request failed: {e}", e);
+            }
             //Catch any errors in our own API call
             catch
             {
@@ -126,18 +141,47 @@ namespace Image
                     stopwatch.Start();
                     token = await dataFabricQuery(content);
                     count++;
-                    log.LogInformation("Number of 500-Count calls: " + count);
+                    log.LogInformation("Number of 1-Count calls: " + count);
                     log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
                 }
                 else
                 {
                     string replacement = "after: " + "\\\"" + token + "\\\"";
-                    string output = "{\"query\":\"{\\n  getMMRList(count: 500, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
+                    string output = "{\"query\":\"{\\n  getMMRList(count: 1, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
                     token = await dataFabricQuery(output);
                     count++;
                     log.LogInformation("Token is" + token);
-                    log.LogInformation("Number of 500-Count calls: " + count);
+                    log.LogInformation("Number of 1-Count calls: " + count);
                     log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
+                }
+            }
+        }
+        
+
+        public SKData resizeImage(String inputPath)
+        {
+            const int size = 600;
+            const int quality = 75;
+
+            using (var input = File.OpenRead(inputPath))
+            {
+                using (var original = SKBitmap.Decode(input))
+                {
+                    int width, height;
+                    if (original.Width > original.Height)
+                    {
+                        width = size;
+                        height = original.Height * size / original.Width;
+                    }
+                    else
+                    {
+                        width = original.Width * size / original.Height;
+                        height = size;
+                    }
+
+                    SKBitmap resized = original.Resize(new SKImageInfo(width, height), SKFilterQuality.Medium);
+                    SKData resizedData = resized.Encode(SKEncodedImageFormat.Jpeg, quality);
+                    return resizedData;
                 }
             }
         }
@@ -160,7 +204,8 @@ namespace Image
                             {
                                 imagesList.Add(image.uniformResourceIdentifier);
                                 string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                String path = Path.Combine(Path.GetTempPath(), fileName);
+                                String inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                                //var imagePath = System.Drawing.Image.FromFile(inputPath);
                                 log.LogInformation("image type is {image.type}", image.type);
                                 log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
                                 log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
@@ -169,7 +214,11 @@ namespace Image
 
                                     try
                                     {
-                                        downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), path);
+                                        if (image.uniformResourceIdentifier != null)
+                                        {
+                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), inputPath);
+
+                                        }
                                     }
                                     //Catch any errors from the datafabric. 
                                     //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
@@ -180,19 +229,24 @@ namespace Image
                                     }
                                 try
                                 {
+                                    var resizedData = resizeImage(inputPath);
+                                    var outputPath = File.OpenWrite(Path.Combine(Path.GetTempPath()));
+                                    resizedData.SaveTo(outputPath);
                                     BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
                                     BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                     blobHttpHeader.ContentType = "image/jpg";
-                                    await blobClient.UploadAsync(path, blobHttpHeader);
-                                    break;
+                                    await blobClient.UploadAsync(outputPath, blobHttpHeader);
                                 }
                                 catch (Azure.RequestFailedException e)
                                 {
                                     log.LogWarning("Request failed: {e}", e);
                                     break;
                                 }
-
-
+                                catch (FileNotFoundException f)
+                                {
+                                    log.LogWarning("File not found: {f}", f);
+                                    break;
+                                }
                             }
                             else
                             {
@@ -202,14 +256,17 @@ namespace Image
                                     {
                                         imagesList.Add(image1.uniformResourceIdentifier);
                                         string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                        String path = Path.Combine(Path.GetTempPath(), fileName);
+                                        String inputPath = Path.Combine(Path.GetTempPath(), fileName);
                                         log.LogInformation("type is {image1.type}", image1.type);
                                         log.LogInformation("uri is {image1.uniformResourceIdentifier}", image1.uniformResourceIdentifier);
                                         log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
                                         using (var downloadClient = new WebClient())
                                             try
                                             {
-                                                downloadClient.DownloadFile(new Uri(image1.uniformResourceIdentifier), path);
+                                                if (image1.uniformResourceIdentifier != null)
+                                                {
+                                                    downloadClient.DownloadFile(new Uri(image1.uniformResourceIdentifier), inputPath);
+                                                }
 
                                             }
                                             //Catch any errors from the datafabric. 
@@ -221,11 +278,13 @@ namespace Image
                                             }
                                         try
                                         {
+                                            var resizedData = resizeImage(inputPath);
+                                            var outputPath = File.OpenWrite(Path.Combine(Path.GetTempPath()));
+                                            resizedData.SaveTo(outputPath);
                                             BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
                                             BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                             blobHttpHeader.ContentType = "image/jpg";
-                                            await blobClient.UploadAsync(path, blobHttpHeader);
-                                            break;
+                                            await blobClient.UploadAsync(outputPath, blobHttpHeader);
                                         }
                                         catch (Azure.RequestFailedException e)
                                         {

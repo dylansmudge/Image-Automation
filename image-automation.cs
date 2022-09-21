@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 
-namespace Image
+namespace Images
 {
     public class ImageAutomation
     {
@@ -29,20 +29,41 @@ namespace Image
         {
             var outputs = new List<string>();
             string input = context.GetInput<string>();
-
-            // Replace "hello" with the name of your Durable Activity Function.
-            outputs.Add(await context.CallActivityAsync<string>("DurableFunctionsOrchestrationCSharp1_Hello", input));
-
-            // returns ["Hello Tokyo!", "Hello Seattle!", "Hello London!"]
+            try
+            {
+                outputs.Add(await context.CallActivityAsync<string>("DurableFunctionsOrchestrationCSharp1_Hello", input));
+            }
+            catch (FunctionFailedException e)
+            {
+                Console.WriteLine(e);
+            }
             return outputs;
+
         }
 
         [FunctionName("DurableFunctionsOrchestrationCSharp1_Hello")]
         public async Task<string> SayHelloAsync([ActivityTrigger] string content, ILogger log)
         {
-            await _dataFabricManager.dataFabricPaging(content);
-            log.LogInformation($"Saying hello to {content}.");
-            return $"Hello {content}!";
+            HttpClient client = new HttpClient();
+            List<String> imagesList = new List<String>();
+            // Call asynchronous network methods in a try/catch block to handle exceptions.
+            try
+            {
+                if (client.BaseAddress == null)
+                {
+                    client.BaseAddress = URL;
+                }
+                client.DefaultRequestHeaders.Add("x-api-key", APIKey);
+                await _dataFabricManager.dataFabricPaging(content);
+                return $"Hello {content}!";
+            }
+            catch (HttpRequestException e)
+            {
+                log.LogError("\nException Caught!");
+                log.LogError("Message :{0} ", e.Message);
+                return $"Hello {content}!";
+            }
+            
         }
 
         /*
