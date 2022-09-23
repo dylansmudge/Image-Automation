@@ -15,7 +15,9 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using SkiaSharp;
-using System.Drawing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Formats;
 
 namespace Images
 {
@@ -158,36 +160,9 @@ namespace Images
         }
         
 
-        public SKData resizeImage(String inputPath)
-        {
-            const int size = 600;
-            const int quality = 75;
-
-            using (var input = File.OpenRead(inputPath))
-            {
-                using (var original = SKBitmap.Decode(input))
-                {
-                    int width, height;
-                    if (original.Width > original.Height)
-                    {
-                        width = size;
-                        height = original.Height * size / original.Width;
-                    }
-                    else
-                    {
-                        width = original.Width * size / original.Height;
-                        height = size;
-                    }
-
-                    SKBitmap resized = original.Resize(new SKImageInfo(width, height), SKFilterQuality.Medium);
-                    SKData resizedData = resized.Encode(SKEncodedImageFormat.Jpeg, quality);
-                    return resizedData;
-                }
-            }
-        }
-
         public async Task dataFabricItemParse(Items items, List<String> imagesList)
         {
+            IImageFormat format;
             if (items.pgr == null || items.pgr.upc == null)
             {
                 log.LogInformation("UPC is null");
@@ -205,7 +180,7 @@ namespace Images
                                 imagesList.Add(image.uniformResourceIdentifier);
                                 string fileName = items.goldenRecordNumberMmrId + ".jpg";
                                 String inputPath = Path.Combine(Path.GetTempPath(), fileName);
-                                //var imagePath = System.Drawing.Image.FromFile(inputPath);
+                                string output = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
                                 log.LogInformation("image type is {image.type}", image.type);
                                 log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
                                 log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
@@ -229,13 +204,13 @@ namespace Images
                                     }
                                 try
                                 {
-                                    var resizedData = resizeImage(inputPath);
-                                    var outputPath = File.OpenWrite(Path.Combine(Path.GetTempPath()));
-                                    resizedData.SaveTo(outputPath);
+                                    Image imageResize = Image.Load(inputPath, out format);
+                                    imageResize.Mutate(x => x.Resize(600, 600));
+                                    imageResize.SaveAsJpeg(output);
                                     BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
                                     BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                     blobHttpHeader.ContentType = "image/jpg";
-                                    await blobClient.UploadAsync(outputPath, blobHttpHeader);
+                                    await blobClient.UploadAsync(output, blobHttpHeader);
                                 }
                                 catch (Azure.RequestFailedException e)
                                 {
@@ -245,6 +220,11 @@ namespace Images
                                 catch (FileNotFoundException f)
                                 {
                                     log.LogWarning("File not found: {f}", f);
+                                    break;
+                                }
+                                catch (UnknownImageFormatException e)
+                                {
+                                    log.LogWarning("Format not found: {e}", e);
                                     break;
                                 }
                             }
@@ -257,6 +237,7 @@ namespace Images
                                         imagesList.Add(image1.uniformResourceIdentifier);
                                         string fileName = items.goldenRecordNumberMmrId + ".jpg";
                                         String inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                                        string output = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
                                         log.LogInformation("type is {image1.type}", image1.type);
                                         log.LogInformation("uri is {image1.uniformResourceIdentifier}", image1.uniformResourceIdentifier);
                                         log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
@@ -278,17 +259,27 @@ namespace Images
                                             }
                                         try
                                         {
-                                            var resizedData = resizeImage(inputPath);
-                                            var outputPath = File.OpenWrite(Path.Combine(Path.GetTempPath()));
-                                            resizedData.SaveTo(outputPath);
+                                            Image imageResize = Image.Load(inputPath, out format);
+                                            imageResize.Mutate(x => x.Resize(600, 600));
+                                            imageResize.SaveAsJpeg(output);
                                             BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
                                             BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                                             blobHttpHeader.ContentType = "image/jpg";
-                                            await blobClient.UploadAsync(outputPath, blobHttpHeader);
+                                            await blobClient.UploadAsync(output, blobHttpHeader);
                                         }
                                         catch (Azure.RequestFailedException e)
                                         {
                                             log.LogWarning("Request failed: {e}", e);
+                                            break;
+                                        }
+                                        catch (FileNotFoundException f)
+                                        {
+                                            log.LogWarning("File not found: {f}", f);
+                                            break;
+                                        }
+                                        catch (UnknownImageFormatException e)
+                                        {
+                                            log.LogWarning("Format not found: {e}", e);
                                             break;
                                         }
                                     }
