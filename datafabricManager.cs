@@ -298,6 +298,10 @@ namespace Images
             {
                 log.LogInformation("Exception occurred: " + e);
             }
+            catch (System.IO.IOException e)
+            {
+                log.LogInformation("Exception occurred: " + e);             
+            }
 
 
         }
