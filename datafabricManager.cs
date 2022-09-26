@@ -287,10 +287,19 @@ namespace Images
         }
         public void resizeImage(String inputPath, string outputPath)
         {
-            IImageFormat format;
-            Image imageResize = Image.Load(inputPath, out format);
-            imageResize.Mutate(x => x.Resize(600, 600));
-            imageResize.SaveAsJpeg(outputPath);
+        IImageFormat format;
+            try
+            {
+                Image imageResize = Image.Load(inputPath, out format);
+                imageResize.Mutate(x => x.Resize(600, 600));
+                imageResize.SaveAsJpeg(outputPath);
+            }
+            catch (System.IO.FileLoadException e)
+            {
+                log.LogInformation("Exception occurred: " + e);
+            }
+
+
         }
 
         public long readImageByteSize(string outputPath)
