@@ -57,6 +57,11 @@ namespace Images
                 await _dataFabricManager.dataFabricPaging(content);
                 return $"Hello {content}!";
             }
+            catch (NullReferenceException e)
+            {
+                log.LogError("Error caught:" + e);
+                return $"Hello {content}!";
+            }
             catch (HttpRequestException e)
             {
                 log.LogError("\nException Caught!");

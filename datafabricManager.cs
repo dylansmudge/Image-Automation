@@ -160,105 +160,105 @@ namespace Images
         {
 
             foreach (var image in itemReference.referencedUPC.images)
+            {
+                if (image.type.Contains("A1N1"))
+                {
+                    imagesList.Add(image.uniformResourceIdentifier);
+                    string fileName = items.goldenRecordNumberMmrId + ".jpg";
+                    string inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                    string outputPath = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
+                    try
+                    {
+                        downloadImage(image.uniformResourceIdentifier, inputPath);
+                    }
+                    //Catch any errors from the datafabric. 
+                    //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
+                    catch (WebException ex)
+                    {
+                        log.LogInformation("ex is {ex}", ex.ToString());
+                        break;
+                    }
+                    try
+                    {
+                        //Code to resize image
+                        resizeImage(inputPath, outputPath);
+                        //Code to read downloaded image to bytes
+                        long imageToUploadSize = readImageByteSize(outputPath);
+                        //Blobclient upload file
+                        await uploadImageToBlobAsync(outputPath, fileName, imageToUploadSize);
+                    }
+                    catch (Azure.RequestFailedException e)
+                    {
+                        log.LogWarning("Request failed: {e}", e);
+                        break;
+                    }
+                    catch (FileNotFoundException f)
+                    {
+                        log.LogWarning("File not found: {f}", f);
+                        break;
+                    }
+                    catch (UnknownImageFormatException e)
+                    {
+                        log.LogWarning("Format not found: {e}", e);
+                        break;
+                    }
+                }
+                else
+                {
+                    foreach (var image1 in items.pgr.upc.images)
+                    {
+                        if (image1.type.Contains("A1N1"))
                         {
-                            if (image.type.Contains("A1N1"))
-                            {
-                                imagesList.Add(image.uniformResourceIdentifier);
-                                string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                string inputPath = Path.Combine(Path.GetTempPath(), fileName);
-                                string outputPath = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
-                                    try
-                                    {
-                                        downloadImage(image.uniformResourceIdentifier, inputPath);
-                                    }
-                                    //Catch any errors from the datafabric. 
-                                    //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
-                                    catch (WebException ex)
-                                    {
-                                        log.LogInformation("ex is {ex}", ex.ToString());
-                                        break;
-                                    }
+                            imagesList.Add(image1.uniformResourceIdentifier);
+                            string fileName = items.goldenRecordNumberMmrId + ".jpg";
+                            string inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                            string outputPath = Path.Combine(Path.GetTempPath() + fileName);
+                            using (var downloadClient = new WebClient())
                                 try
                                 {
-                                    //Code to resize image
-                                    resizeImage(inputPath, outputPath);
-                                    //Code to read downloaded image to bytes
-                                    long imageToUploadSize = readImageByteSize(outputPath);
-                                    //Blobclient upload file
-                                    await uploadImageToBlobAsync(outputPath, fileName, imageToUploadSize);
+                                    downloadImage(image1.uniformResourceIdentifier, inputPath);
                                 }
-                                catch (Azure.RequestFailedException e)
+                                //Catch any errors from the datafabric. 
+                                //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
+                                catch (WebException ex)
                                 {
-                                    log.LogWarning("Request failed: {e}", e);
+                                    log.LogWarning("Exception is {ex}", ex);
                                     break;
                                 }
-                                catch (FileNotFoundException f)
-                                {
-                                    log.LogWarning("File not found: {f}", f);
-                                    break;
-                                }
-                                catch (UnknownImageFormatException e)
-                                {
-                                    log.LogWarning("Format not found: {e}", e);
-                                    break;
-                                }
-                            }
-                            else
+                            try
                             {
-                                foreach (var image1 in items.pgr.upc.images)
-                                {
-                                    if (image1.type.Contains("A1N1"))
-                                    {
-                                        imagesList.Add(image1.uniformResourceIdentifier);
-                                        string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                        string inputPath = Path.Combine(Path.GetTempPath(), fileName);
-                                        string outputPath = Path.Combine(Path.GetTempPath() + fileName);
-                                        using (var downloadClient = new WebClient())
-                                            try
-                                            {
-                                                downloadImage(image1.uniformResourceIdentifier, inputPath);
-                                            }
-                                            //Catch any errors from the datafabric. 
-                                            //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
-                                            catch (WebException ex)
-                                            {
-                                                log.LogWarning("Exception is {ex}", ex);
-                                                break;
-                                            }
-                                        try
-                                        {
-                                            resizeImage(inputPath, outputPath);
+                                resizeImage(inputPath, outputPath);
 
-                                            //Code to read downloaded image to bytes
-                                            long imageSize = readImageByteSize(outputPath);
+                                //Code to read downloaded image to bytes
+                                long imageSize = readImageByteSize(outputPath);
 
-                                            //Blobclient upload file
-                                            await uploadImageToBlobAsync(outputPath, fileName, imageSize);
-                                            BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+                                //Blobclient upload file
+                                await uploadImageToBlobAsync(outputPath, fileName, imageSize);
+                                BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
 
-                                        }
-                                        catch (Azure.RequestFailedException e)
-                                        {
-                                            log.LogWarning("Request failed: {e}", e);
-                                            break;
-                                        }
-                                        catch (FileNotFoundException f)
-                                        {
-                                            log.LogWarning("File not found: {f}", f);
-                                            break;
-                                        }
-                                        catch (UnknownImageFormatException e)
-                                        {
-                                            log.LogWarning("Format not found: {e}", e);
-                                            break;
-                                        }
-                                    }
-                                }
+                            }
+                            catch (Azure.RequestFailedException e)
+                            {
+                                log.LogWarning("Request failed: {e}", e);
+                                break;
+                            }
+                            catch (FileNotFoundException f)
+                            {
+                                log.LogWarning("File not found: {f}", f);
+                                break;
+                            }
+                            catch (UnknownImageFormatException e)
+                            {
+                                log.LogWarning("Format not found: {e}", e);
+                                break;
                             }
                         }
+                    }
+                }
+            }
 
-        } 
-        
+        }
+
 
         public async Task dataFabricItemParse(Items items, List<String> imagesList)
         {
@@ -303,18 +303,32 @@ namespace Images
         public async Task uploadImageToBlobAsync(String outputPath, String fileName, long imageToUploadSize)
         {
             BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-            var content  = blobClient.DownloadContent();
-            long blobImageSize = content.Value.Details.ContentLength;
-            if (imageToUploadSize != blobImageSize)
+            if (!blobClient.Exists())
             {
                 BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
                 blobHttpHeader.ContentType = "image/jpg";
                 await blobClient.UploadAsync(outputPath, blobHttpHeader);
+                log.LogInformation(" Uploaded new image with " + imageToUploadSize + " bytes.");
+                Console.WriteLine(" Uploaded new image with " + imageToUploadSize + " bytes.");
             }
             else
             {
-                log.LogInformation("Nothing to upload");
+                var content = blobClient.DownloadContent();
+                long blobImageSize = content.Value.Details.ContentLength;
+                if (imageToUploadSize != blobImageSize)
+                {
+                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                    blobHttpHeader.ContentType = "image/jpg";
+                    await blobClient.UploadAsync(outputPath, blobHttpHeader);
+                    log.LogInformation(" Uploaded new image with " + imageToUploadSize + " bytes. \n Previous image had " + blobImageSize + " bytes.");
+                    Console.WriteLine(" Uploaded new image with " + imageToUploadSize + " bytes. \n Previous image had " + blobImageSize + " bytes.");
+                }
+                else
+                {
+                    log.LogInformation("Nothing to upload");
+                }
             }
+
 
 
         }
@@ -322,7 +336,7 @@ namespace Images
         public void downloadImage(String uniformResourceIdentifier, String inputPath)
         {
             using (var downloadClient = new WebClient())
-            if (uniformResourceIdentifier != null)
+                if (uniformResourceIdentifier != null)
                 {
                     downloadClient.DownloadFile(new Uri(uniformResourceIdentifier), inputPath);
 
