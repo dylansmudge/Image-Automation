@@ -6,15 +6,10 @@ using System.Collections.Generic;
 using System.Net;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Azure.Storage;
-using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using SkiaSharp;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats;
@@ -158,42 +153,23 @@ namespace Images
                 }
             }
         }
-        
 
-        public async Task dataFabricItemParse(Items items, List<String> imagesList)
+
+
+        public async Task readType(Items items, ItemReference itemReference, List<String> imagesList)
         {
-            IImageFormat format;
-            if (items.pgr == null || items.pgr.upc == null)
-            {
-                log.LogInformation("UPC is null");
-            }
-            else
-            {
-                try
-                {
-                    foreach (var itemReference in items.pgr.upc.itemReferences)
-                    {
-                        foreach (var image in itemReference.referencedUPC.images)
+
+            foreach (var image in itemReference.referencedUPC.images)
                         {
                             if (image.type.Contains("A1N1"))
                             {
                                 imagesList.Add(image.uniformResourceIdentifier);
                                 string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                String inputPath = Path.Combine(Path.GetTempPath(), fileName);
-                                string output = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
-                                log.LogInformation("image type is {image.type}", image.type);
-                                log.LogInformation("uri is {image1.uniformResourceIdentifier}", image.uniformResourceIdentifier);
-                                log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
-
-                                using (var downloadClient = new WebClient())
-
+                                string inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                                string outputPath = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
                                     try
                                     {
-                                        if (image.uniformResourceIdentifier != null)
-                                        {
-                                            downloadClient.DownloadFile(new Uri(image.uniformResourceIdentifier), inputPath);
-
-                                        }
+                                        downloadImage(image.uniformResourceIdentifier, inputPath);
                                     }
                                     //Catch any errors from the datafabric. 
                                     //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
@@ -204,13 +180,12 @@ namespace Images
                                     }
                                 try
                                 {
-                                    Image imageResize = Image.Load(inputPath, out format);
-                                    imageResize.Mutate(x => x.Resize(600, 600));
-                                    imageResize.SaveAsJpeg(output);
-                                    BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                    BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                    blobHttpHeader.ContentType = "image/jpg";
-                                    await blobClient.UploadAsync(output, blobHttpHeader);
+                                    //Code to resize image
+                                    resizeImage(inputPath, outputPath);
+                                    //Code to read downloaded image to bytes
+                                    long imageToUploadSize = readImageByteSize(outputPath);
+                                    //Blobclient upload file
+                                    await uploadImageToBlobAsync(outputPath, fileName, imageToUploadSize);
                                 }
                                 catch (Azure.RequestFailedException e)
                                 {
@@ -236,19 +211,12 @@ namespace Images
                                     {
                                         imagesList.Add(image1.uniformResourceIdentifier);
                                         string fileName = items.goldenRecordNumberMmrId + ".jpg";
-                                        String inputPath = Path.Combine(Path.GetTempPath(), fileName);
-                                        string output = "/Users/dylancarlyle/Pictures/Temp/" + fileName;
-                                        log.LogInformation("type is {image1.type}", image1.type);
-                                        log.LogInformation("uri is {image1.uniformResourceIdentifier}", image1.uniformResourceIdentifier);
-                                        log.LogInformation("golden record number is {items.goldenRecordNumberMmrId}", items.goldenRecordNumberMmrId);
+                                        string inputPath = Path.Combine(Path.GetTempPath(), fileName);
+                                        string outputPath = Path.Combine(Path.GetTempPath() + fileName);
                                         using (var downloadClient = new WebClient())
                                             try
                                             {
-                                                if (image1.uniformResourceIdentifier != null)
-                                                {
-                                                    downloadClient.DownloadFile(new Uri(image1.uniformResourceIdentifier), inputPath);
-                                                }
-
+                                                downloadImage(image1.uniformResourceIdentifier, inputPath);
                                             }
                                             //Catch any errors from the datafabric. 
                                             //Note: The orignial API call can give us 404 errors and potentially other 400 errors.
@@ -259,13 +227,15 @@ namespace Images
                                             }
                                         try
                                         {
-                                            Image imageResize = Image.Load(inputPath, out format);
-                                            imageResize.Mutate(x => x.Resize(600, 600));
-                                            imageResize.SaveAsJpeg(output);
+                                            resizeImage(inputPath, outputPath);
+
+                                            //Code to read downloaded image to bytes
+                                            long imageSize = readImageByteSize(outputPath);
+
+                                            //Blobclient upload file
+                                            await uploadImageToBlobAsync(outputPath, fileName, imageSize);
                                             BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
-                                            BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
-                                            blobHttpHeader.ContentType = "image/jpg";
-                                            await blobClient.UploadAsync(output, blobHttpHeader);
+
                                         }
                                         catch (Azure.RequestFailedException e)
                                         {
@@ -286,6 +256,23 @@ namespace Images
                                 }
                             }
                         }
+
+        } 
+        
+
+        public async Task dataFabricItemParse(Items items, List<String> imagesList)
+        {
+            if (items.pgr == null || items.pgr.upc == null)
+            {
+                log.LogInformation("UPC is null");
+            }
+            else
+            {
+                try
+                {
+                    foreach (var itemReference in items.pgr.upc.itemReferences)
+                    {
+                        await readType(items, itemReference, imagesList);
                     }
 
                 }
@@ -297,6 +284,49 @@ namespace Images
 
             }
 
+        }
+        public void resizeImage(String inputPath, string outputPath)
+        {
+            IImageFormat format;
+            Image imageResize = Image.Load(inputPath, out format);
+            imageResize.Mutate(x => x.Resize(600, 600));
+            imageResize.SaveAsJpeg(outputPath);
+        }
+
+        public long readImageByteSize(string outputPath)
+        {
+            byte[] buffer = File.ReadAllBytes(outputPath);
+            long byteSize = buffer.Length;
+            return byteSize;
+        }
+
+        public async Task uploadImageToBlobAsync(String outputPath, String fileName, long imageToUploadSize)
+        {
+            BlobClient blobClient = _photoBlobContainerClient.GetBlobClient(fileName);
+            var content  = blobClient.DownloadContent();
+            long blobImageSize = content.Value.Details.ContentLength;
+            if (imageToUploadSize != blobImageSize)
+            {
+                BlobHttpHeaders blobHttpHeader = new BlobHttpHeaders();
+                blobHttpHeader.ContentType = "image/jpg";
+                await blobClient.UploadAsync(outputPath, blobHttpHeader);
+            }
+            else
+            {
+                log.LogInformation("Nothing to upload");
+            }
+
+
+        }
+
+        public void downloadImage(String uniformResourceIdentifier, String inputPath)
+        {
+            using (var downloadClient = new WebClient())
+            if (uniformResourceIdentifier != null)
+                {
+                    downloadClient.DownloadFile(new Uri(uniformResourceIdentifier), inputPath);
+
+                }
         }
     } // End of Class
 } //End of Namespace
