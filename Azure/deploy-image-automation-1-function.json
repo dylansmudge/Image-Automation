@@ -1,0 +1,350 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceNamingStrategy": {
+            "type": "string",
+            "defaultValue": "tccc",
+            "allowedValues": [
+                "cona",
+                "tccc"
+            ],
+            "metadata": {
+                "description": "Strategy to use when generating Azure resource names."
+            }
+        },
+        "subscriptionId": {
+            "type": "string",
+            "defaultValue": "[subscription().subscriptionId]",
+            "metadata": {
+                "description": "The subscription ID that refers to the 'primary' subscription of the rest of the PACE installation."
+            }
+        },
+        "resourceGroupName": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().name]",
+            "metadata": {
+                "description": "The resource group name that refers to the 'primary' resource of the rest of the PACE installation."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure location to use for most resources. Should usually be the same as the Resource Group location (default)."
+            }
+        },
+        "functionAppName": {
+            "type": "string"
+        },
+        "functionWebJobsStorageName": {
+            "type": "string"
+        },
+        "appServicePlanName": {
+            "type": "string"
+        },
+        "useSecondaryKeys": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Use secondary keys for Cosmos DB, Azure Storage, Redis, API Management, Event Hubs and Service Bus. Allows for key rotation to be performed without interruption of service. Defaults to false (use primary keys)."
+            }
+        },
+        "appInsightsName": {
+            "type": "string"
+        },
+        "backEndAppServiceSku": {
+            "type": "object",
+            "defaultValue": {
+                "name": "S1",
+                "tier": "Standard"
+            },
+            "metadata": {
+                "description": "SKU name and tier to use for App Service Plan."
+            }
+        },
+        "functionAppTimezone": {
+            "type": "string"
+        },
+        "changeFeedLeaseAccountName": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "ipWhitelist": {
+            "type": "string",
+            "metadata": {
+                "description": "List of IP addresses allowed to bypass restrictions on Storage, Cosmos DB, Key Vault, Event Hubs and Kudu/SCM."
+            }
+        },
+        "kuduAllowedIpPrefixes": {
+            "type": "array",
+            "defaultValue": [],
+            "metadata": {
+                "description": "List of IP prefixes allowed access to Kudu/SCM. If deploying code using Microsoft-hosted agents for Azure Pipelines, this should include the IP prefixes of all Azure datacenters in the geography of the Azure DevOps organization (see https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops#agent-ip-ranges)."
+            }
+        },
+        "kuduAllowedServiceTags": {
+            "type": "array",
+            "defaultValue": [],
+            "metadata": {
+                "description": "List of service tags allowed access to Kudu/SCM. If deploying code using Microsoft-hosted agents for Azure Pipelines and there are too many IP prefixes to list, the \"AzureCloud\" service tag can be used to allow traffic from all Azure public IP addresses."
+            }
+        },
+        "apiManagementSubnetName": {
+            "type": "string"
+        },
+        "functionResourcesSubnetName": {
+            "type": "string"
+        },
+        "backgroundFunctionResourcesSubnetName": {
+            "type": "string"
+        },
+        "redisCacheName": {
+            "type": "string"
+        },
+        "reportingEventHubNamespace": {
+            "type": "string"
+        },
+        "formSubmissionEventHubName": {
+            "type": "string"
+        },
+        "image-automationEventHubName": {
+            "type": "string"
+        },
+        "biibimage-automationEgressUrl": {
+            "type": "string"
+        },
+        "attachmentsStorageName": {
+            "type": "string"
+        }
+    },
+    "variables": {
+        "azurePlatformDnsServer": "168.63.129.16",
+        "storageKeyName": "[if(parameters('useSecondaryKeys'), 'key2', 'key1')]",
+        "functionWebJobsStorageResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionWebJobsStorageName'))]",
+        "backEndContentConnectionStringName": "[if(equals(parameters('backEndAppServiceSku').tier, 'ElasticPremium'), 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'THIS_FIELD_INTENTIONALLY_LEFT_BLANK')]",
+        "redisKeyName": "[if(parameters('useSecondaryKeys'), 'secondaryKey', 'primaryKey')]",
+        "redisResourceId": "[resourceId('Microsoft.Cache/Redis', parameters('redisCacheName'))]",
+        "eventHubConnectionStringName": "[if(parameters('useSecondaryKeys'), 'secondaryConnectionString', 'primaryConnectionString')]",
+        "copy": [
+            {
+                "name": "scmIpSecurityRestrictions",
+                "count": "[add(add(length(split(parameters('ipWhitelist'), ',')), length(parameters('kuduAllowedIpPrefixes'))), length(parameters('kuduAllowedServiceTags')))]",
+                "input": {
+                    "action": "Allow",
+                    "name": "[concat('Allow ', concat(split(parameters('ipWhitelist'), ','), parameters('kuduAllowedIpPrefixes'), parameters('kuduAllowedServiceTags'))[copyIndex('scmIpSecurityRestrictions')])]",
+                    "description": "[if(less(copyIndex('scmIpSecurityRestrictions'), length(split(parameters('ipWhitelist'), ','))), 'Allowlisted IP', if(less(copyIndex('scmIpSecurityRestrictions'), add(length(split(parameters('ipWhitelist'), ',')), length(parameters('kuduAllowedIpPrefixes')))), 'Kudu allowed IP prefix', 'Kudu allowed service tag'))]",
+                    "ipAddress": "[concat(concat(split(parameters('ipWhitelist'), ','), parameters('kuduAllowedIpPrefixes'), parameters('kuduAllowedServiceTags'))[copyIndex('scmIpSecurityRestrictions')], if(less(copyIndex('scmIpSecurityRestrictions'), length(split(parameters('ipWhitelist'), ','))), '/32', ''))]",
+                    "tag": "[if(less(copyIndex('scmIpSecurityRestrictions'), add(length(split(parameters('ipWhitelist'), ',')), length(parameters('kuduAllowedIpPrefixes')))), 'Default', 'ServiceTag')]",
+                    "priority": "[copyIndex('scmIpSecurityRestrictions', 50000)]"
+                }
+            }
+        ],
+        "sasProperties": {
+            "image-automation": {
+                "form-attachments": {
+                    "keyToSign": "[if(parameters('useSecondaryKeys'), 'key2', 'key1')]",
+                    "canonicalizedResource": "[concat('/blob/', parameters('attachmentsStorageName'), '/pace-formanswer-imageupload')]",
+                    "signedProtocol": "https",
+                    "signedResource": "c",
+                    "signedPermission": "rl",
+                    "signedExpiry": "3121-01-01T00:31:21Z"
+
+                }
+            }
+        }
+    },
+    "functions": [
+        {
+            "namespace": "coke",
+            "members": {
+
+                "contentAzureFileConnectionString": {
+                    "parameters": [
+                        {
+                            "name": "appServiceSkuTier",
+                            "type": "string"
+                        },
+                        {
+                            "name": "storageAccountName",
+                            "type": "string"
+                        },
+                        {
+                            "name": "storageAccountKeys",
+                            "type": "secureObject"
+                        },
+                        {
+                            "name": "storageKeyName",
+                            "type": "string"
+                        }
+                    ],
+                    "output": {
+                        "type": "secureString",
+                        "value": "[if(equals(parameters('appServiceSkuTier'), 'ElasticPremium'), concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', parameters('storageAccountKeys')[parameters('storageKeyName')], ';EndpointSuffix=core.windows.net'), '')]"
+                    }
+                },
+                "redisConfig": {
+                    "parameters": [
+                        {
+                            "name": "redisCacheReference",
+                            "type": "object"
+                        },
+                        {
+                            "name": "redisKeys",
+                            "type": "secureObject"
+                        },
+                        {
+                            "name": "redisKeyName",
+                            "type": "string"
+                        }
+                    ],
+                    "output": {
+                        "type": "secureString",
+                        "value": "[concat(parameters('redisCacheReference').hostName, ':', parameters('redisCacheReference').sslPort, ',password=', parameters('redisKeys')[parameters('redisKeyName')], ',ssl=True,abortConnect=False,sslProtocols=Tls12,checkCertificateRevocation=false')]"
+                    }
+                }
+            }
+        }
+    ],
+    "resources": [
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2019-08-01",
+            "name": "[parameters('functionAppName')]",
+            "location": "[parameters('location')]",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "properties": {
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]",
+                "hostingEnvironment": "",
+                "clientAffinityEnabled": false,
+                "httpsOnly": true,
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "1"
+                        },
+                        {
+                            "name": "WEBSITE_VNET_ROUTE_ALL",
+                            "value": "1"
+                        },
+                        {
+                            "name": "WEBSITE_DNS_SERVER",
+                            "value": "[variables('azurePlatformDnsServer')]"
+                        },
+                        {
+                            "name": "[variables('backEndContentConnectionStringName')]",
+                            "value": "[coke.contentAzureFileConnectionString(parameters('backEndAppServiceSku').tier, parameters('functionWebJobsStorageName'), listKeys(variables('functionWebJobsStorageResourceId'), '2015-06-15'), variables('storageKeyName'))]"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "dotnet"
+                        },
+                        {
+                            "name": "WEBSITE_TIME_ZONE",
+                            "value": "[parameters('functionAppTimezone')]"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', parameters('functionWebJobsStorageName'), ';AccountKey=', listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('functionWebJobsStorageName')), '2015-06-15')[variables('storageKeyName')], ';EndpointSuffix=core.windows.net')]"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2015-05-01').InstrumentationKey]"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "UseDevelopmentStorage"
+                        },
+                        {
+                            "name": "APIKey",
+                            "value": "da2-oychlsjubbh5be2htpxyc6eeoi"
+                        },
+                        {
+                            "name": "BlobUri",
+                            "value": "http://127.0.0.1:10000/devstoreaccount1/image-automation"
+                        },
+                        {
+                            "name": "AccountKey",
+                            "value": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+                        },
+                        {
+                            "name": "AccountName",
+                            "value": "devstoreaccount1"
+                        }
+                    ]
+                }
+            },
+            "resources": [
+                {
+                    "type": "config",
+                    "apiVersion": "2019-08-01",
+                    "name": "web",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+                    ],
+                    "location": "[parameters('location')]",
+                    "properties": {
+                        "use32BitWorkerProcess": true,
+                        "ftpsState": "Disabled",
+                        "alwaysOn": "[not(equals('ElasticPremium', reference(resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName')), '2019-08-01', 'Full').sku.tier))]",
+                        "healthCheckPath": "/api/HealthCheck",
+                        "scmIpSecurityRestrictions": "[variables('scmIpSecurityRestrictions')]",
+                        "ipSecurityRestrictions": [
+                            {
+                                "action": "Allow",
+                                "name": "allow-same-vnet",
+                                "priority": 300,
+                                "tag": "Default",
+                                "vnetSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('functionResourcesSubnetName'))]"
+                            },
+                            {
+                                "action": "Allow",
+                                "name": "allow-background-vnet",
+                                "priority": 300,
+                                "tag": "Default",
+                                "vnetSubnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('backgroundFunctionResourcesSubnetName'))]"
+                            },
+                            {
+                                "action": "Allow",
+                                "name": "allow-api-management",
+                                "priority": 350,
+                                "tag": "Default",
+                                "vnetSubnetResourceId": "[resourceId(parameters('subscriptionId'), parameters('resourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('apiManagementSubnetName'))]"
+                            },
+                            {
+                                "action": "Deny",
+                                "description": "Deny all access",
+                                "ipAddress": "Any",
+                                "name": "Deny all",
+                                "priority": 2147483647
+                            }
+                        ]
+                    }
+                },
+                {
+                    "type": "networkConfig",
+                    "apiVersion": "2018-11-01",
+                    "name": "virtualNetwork",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+                    ],
+                    "location": "[parameters('location')]",
+                    "properties": {
+                        "subnetResourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('backgroundFunctionResourcesSubnetName'))]",
+                        "swiftSupported": true
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -138,17 +138,17 @@ namespace Images
                     stopwatch.Start();
                     token = await dataFabricQuery(content);
                     count++;
-                    log.LogInformation("Number of 1-Count calls: " + count);
+                    log.LogInformation("Number of 500-Count calls: " + count);
                     log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
                 }
                 else
                 {
                     string replacement = "after: " + "\\\"" + token + "\\\"";
-                    string output = "{\"query\":\"{\\n  getMMRList(count: 1, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
+                    string output = "{\"query\":\"{\\n  getMMRList(count: 500, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
                     token = await dataFabricQuery(output);
                     count++;
                     log.LogInformation("Token is" + token);
-                    log.LogInformation("Number of 1-Count calls: " + count);
+                    log.LogInformation("Number of 500-Count calls: " + count);
                     log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
                 }
             }
@@ -283,7 +283,7 @@ namespace Images
 
 
             }
-
+            
         }
         public void resizeImage(String inputPath, string outputPath)
         {
@@ -302,8 +302,6 @@ namespace Images
             {
                 log.LogInformation("Exception occurred: " + e);             
             }
-
-
         }
 
         public long readImageByteSize(string outputPath)
