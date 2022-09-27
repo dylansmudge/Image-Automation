@@ -2,15 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "resourceNamingStrategy": {
-            "value": "cona"
-        },
-        "applicationSid": {
-            "value": "pac"
-        },
-        "environment": {
-            "value": "maintenance"
-        },
         "functionAppName": {
             "value": "func-m-pac-image-automation"
         },
@@ -23,20 +14,8 @@
         "appInsightsName": {
             "value": "appi_nonpsub_m_pac_westus2"
         },
-        "cosmosBrokerFunctionAppName": {
-            "value": "func-m-pac-cosmosbroker"
-        },
-        "cosmosBrokerAppRegistration": {
-            "value": "ff93aa0b-1a71-4562-90d5-207e26aa15f4"
-        },
-        "cosmosDbName": {
-            "value": "cosmos-nonp-m-pac-westus2-01"
-        },
         "functionAppTimezone": {
             "value": "Eastern Standard Time"
-        },
-        "changeFeedLeaseAccountName": {
-            "value": "cosmos-nonp-m-pac-westus2-02"
         },
         "ipWhitelist": {
             "value": "111.69.69.119"
@@ -64,68 +43,20 @@
                 "AzureCloud"
             ]
         },
-        "redisCacheName": {
-            "value": "redis-nonpsub-m-pac-westus2-01"
-        },
-        "reportingEventHubNamespace": {
-            "value": "evhns-nonp-m-pac-westus2-03"
-        },
-        "formSubmissionEventHubName": {
-            "value": "form-submission"
-        },
-        "image-automationEventHubName": {
-            "value": "image-automation"
-        },
-        "biibimage-automationEgressUrl": {
-            "value": ""
-        },
-        "attachmentsStorageName": {
-            "value": "stgmpacwestus2005"
-        },
-        "orderingServiceBusNamespace": {
-            "value": "sbn-nonp-m-pac-westus2-02"
-        },
-        "image-automationFunctionAppName": {
-            "value": "func-m-pac-image-automation"
-        },
-        "jwtOpenIdConfiguration": {
-            "value": "https://login.microsoftonline.com/9120276d-6bfd-47fe-a09f-cdcf486f545f/v2.0/.well-known/openid-configuration"
-        },
-        "jwtAudience": {
-            "value": "https://graph.windows.net/"
-        },
-        "jwtIssuer": {
-            "value": "https://sts.windows.net/9120276d-6bfd-47fe-a09f-cdcf486f545f/"
-        },
-        "apiManagementName": {
-            "value": "apim-nonpsub-m-pac-westus2-01"
-        },
         "URL": {
             "value": "https://datafabric.coke.com"
         },
         "APIKey": {
-            "value": "APIKey"
+            "value": "da2-oychlsjubbh5be2htpxyc6eeoi"
         },
         "Uri": {
-            "value": "BlobUri"
+            "value": "http://127.0.0.1:10000/devstoreaccount1/image-automation"
         },
         "AccountName": {
-            "value": "AccountName"
+            "value": "devstoreaccount1"
         },
         "AccountKey": {
-            "value": "AccountKey"
-        },
-        "BlobContainerClient" : {
-            "value": "_photoBlobContainerClient"
-        },
-        "BlobClient": {
-            "value": "_photoBlobClient"
-        },
-        "HttpClient": {
-            "value": "client"
-        },
-        "ILogger": {
-            "value": "log"
+            "value": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
         }
     }
 }

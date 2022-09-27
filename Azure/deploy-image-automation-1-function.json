@@ -2,17 +2,6 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-        "resourceNamingStrategy": {
-            "type": "string",
-            "defaultValue": "tccc",
-            "allowedValues": [
-                "cona",
-                "tccc"
-            ],
-            "metadata": {
-                "description": "Strategy to use when generating Azure resource names."
-            }
-        },
         "subscriptionId": {
             "type": "string",
             "defaultValue": "[subscription().subscriptionId]",
@@ -66,9 +55,6 @@
         "functionAppTimezone": {
             "type": "string"
         },
-        "changeFeedLeaseAccountName": {
-            "type": "string"
-        },
         "vnetName": {
             "type": "string"
         },
@@ -101,22 +87,19 @@
         "backgroundFunctionResourcesSubnetName": {
             "type": "string"
         },
-        "redisCacheName": {
+        "URL": {
             "type": "string"
         },
-        "reportingEventHubNamespace": {
+        "APIKey": {
             "type": "string"
         },
-        "formSubmissionEventHubName": {
+        "Uri": {
             "type": "string"
         },
-        "image-automationEventHubName": {
+        "AccountName": {
             "type": "string"
         },
-        "biibimage-automationEgressUrl": {
-            "type": "string"
-        },
-        "attachmentsStorageName": {
+        "AccountKey": {
             "type": "string"
         }
     },
@@ -125,9 +108,6 @@
         "storageKeyName": "[if(parameters('useSecondaryKeys'), 'key2', 'key1')]",
         "functionWebJobsStorageResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('functionWebJobsStorageName'))]",
         "backEndContentConnectionStringName": "[if(equals(parameters('backEndAppServiceSku').tier, 'ElasticPremium'), 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING', 'THIS_FIELD_INTENTIONALLY_LEFT_BLANK')]",
-        "redisKeyName": "[if(parameters('useSecondaryKeys'), 'secondaryKey', 'primaryKey')]",
-        "redisResourceId": "[resourceId('Microsoft.Cache/Redis', parameters('redisCacheName'))]",
-        "eventHubConnectionStringName": "[if(parameters('useSecondaryKeys'), 'secondaryConnectionString', 'primaryConnectionString')]",
         "copy": [
             {
                 "name": "scmIpSecurityRestrictions",
@@ -141,20 +121,7 @@
                     "priority": "[copyIndex('scmIpSecurityRestrictions', 50000)]"
                 }
             }
-        ],
-        "sasProperties": {
-            "image-automation": {
-                "form-attachments": {
-                    "keyToSign": "[if(parameters('useSecondaryKeys'), 'key2', 'key1')]",
-                    "canonicalizedResource": "[concat('/blob/', parameters('attachmentsStorageName'), '/pace-formanswer-imageupload')]",
-                    "signedProtocol": "https",
-                    "signedResource": "c",
-                    "signedPermission": "rl",
-                    "signedExpiry": "3121-01-01T00:31:21Z"
-
-                }
-            }
-        }
+        ]
     },
     "functions": [
         {
@@ -183,26 +150,6 @@
                     "output": {
                         "type": "secureString",
                         "value": "[if(equals(parameters('appServiceSkuTier'), 'ElasticPremium'), concat('DefaultEndpointsProtocol=https;AccountName=', parameters('storageAccountName'), ';AccountKey=', parameters('storageAccountKeys')[parameters('storageKeyName')], ';EndpointSuffix=core.windows.net'), '')]"
-                    }
-                },
-                "redisConfig": {
-                    "parameters": [
-                        {
-                            "name": "redisCacheReference",
-                            "type": "object"
-                        },
-                        {
-                            "name": "redisKeys",
-                            "type": "secureObject"
-                        },
-                        {
-                            "name": "redisKeyName",
-                            "type": "string"
-                        }
-                    ],
-                    "output": {
-                        "type": "secureString",
-                        "value": "[concat(parameters('redisCacheReference').hostName, ':', parameters('redisCacheReference').sslPort, ',password=', parameters('redisKeys')[parameters('redisKeyName')], ',ssl=True,abortConnect=False,sslProtocols=Tls12,checkCertificateRevocation=false')]"
                     }
                 }
             }
@@ -262,24 +209,24 @@
                             "value": "[reference(resourceId('Microsoft.Insights/components', parameters('appInsightsName')), '2015-05-01').InstrumentationKey]"
                         },
                         {
-                            "name": "AzureWebJobsStorage",
-                            "value": "UseDevelopmentStorage"
-                        },
-                        {
                             "name": "APIKey",
-                            "value": "da2-oychlsjubbh5be2htpxyc6eeoi"
-                        },
-                        {
-                            "name": "BlobUri",
-                            "value": "http://127.0.0.1:10000/devstoreaccount1/image-automation"
+                            "value": "[parameters('APIKey')]"
                         },
                         {
                             "name": "AccountKey",
-                            "value": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+                            "value": "[parameters('AccountKey')]"
                         },
                         {
                             "name": "AccountName",
-                            "value": "devstoreaccount1"
+                            "value": "[parameters('AccountName')]"
+                        },
+                                                {
+                            "name": "URL",
+                            "value": "[parameters('URL')]"
+                        },
+                                                {
+                            "name": "Uri",
+                            "value": "[parameters('Uri')]"
                         }
                     ]
                 }
