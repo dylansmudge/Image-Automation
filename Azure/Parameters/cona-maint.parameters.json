@@ -6,13 +6,13 @@
             "value": "func-m-pac-image-automation"
         },
         "functionWebJobsStorageName": {
-            "value": "stgmpacwestus2004"
+            "value": "stgmpacwestus2005"
         },
         "appServicePlanName": {
             "value": "plan_m_pac_001"
         },
         "appInsightsName": {
-            "value": "appi_nonpsub_m_pac_westus2"
+            "value": "appi_nonpsub_q_pac_westus2"
         },
         "functionAppTimezone": {
             "value": "Eastern Standard Time"
@@ -53,10 +53,10 @@
             "value": "http://127.0.0.1:10000/devstoreaccount1/image-automation"
         },
         "AccountName": {
-            "value": "devstoreaccount1"
+            "value": "stgqpacwestus2005"
         },
         "AccountKey": {
-            "value": "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+            "value": "IsWNsk2uFnf9K5t1xCpf2bdrJUyiUGc+qDzNzoDkcn/Fa5FP+PQnfxRpWuNgSiiEdRhtwzk+aIfMp7xZrrnqUg=="
         }
     }
 }
