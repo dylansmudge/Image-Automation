@@ -12,7 +12,7 @@
             "value": "plan_m_pac_001"
         },
         "appInsightsName": {
-            "value": "appi_nonpsub_q_pac_westus2"
+            "value": "appi_nonpsub_m_pac_westus2"
         },
         "functionAppTimezone": {
             "value": "Eastern Standard Time"
@@ -26,11 +26,17 @@
         "apiManagementSubnetName": {
             "value": "snet_nonpsub_pac_apim_westus2_01"
         },
+        "apiManagementName": {
+            "value": "PACE-image-automation"
+        },
         "functionResourcesSubnetName": {
             "value": "snet_nonpsub_pac_appservice_westus2_01"
         },
         "backgroundFunctionResourcesSubnetName": {
             "value": "snet_nonpsub_pac_appservice_westus2_01"
+        },
+        "applicationSid": {
+            "value": "PACE-image-automation"
         },
         "backEndAppServiceSku": {
             "value": {
@@ -50,13 +56,13 @@
             "value": "da2-oychlsjubbh5be2htpxyc6eeoi"
         },
         "Uri": {
-            "value": "http://127.0.0.1:10000/devstoreaccount1/image-automation"
+            "value": "https://stgmpacwestus2005.blob.core.windows.net/resource-images"
         },
         "AccountName": {
-            "value": "stgqpacwestus2005"
+            "value": "stgmpacwestus2005"
         },
         "AccountKey": {
-            "value": "IsWNsk2uFnf9K5t1xCpf2bdrJUyiUGc+qDzNzoDkcn/Fa5FP+PQnfxRpWuNgSiiEdRhtwzk+aIfMp7xZrrnqUg=="
+            "value": "p4BWOk3Z3/74fxePe7pWyQR7RtafV69MexCq/1LcVv2i00KJ5JKX8EmoRRohPFAOaML5Q1MFWY3/R/1Nk/0ytQ=="
         }
     }
 }

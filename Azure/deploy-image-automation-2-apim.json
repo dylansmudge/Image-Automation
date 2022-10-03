@@ -1,0 +1,329 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceNamingStrategy": {
+            "type": "string",
+            "defaultValue": "tccc",
+            "allowedValues": [
+                "cona",
+                "tccc"
+            ],
+            "metadata": {
+                "description": "Strategy to use when generating Azure resource names."
+            }
+        },
+        "subscriptionSid": {
+            "type": "string",
+            "defaultValue": "[subscription().subscriptionId]",
+            "metadata": {
+                "description": "The subscription ID that refers to the 'primary' subscription of the rest of the PACE installation."
+            }
+        },
+        "applicationSid": {
+            "type": "string"
+        },
+        "resourceGroupName": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().name]",
+            "metadata": {
+                "description": "The resource group name that refers to the 'primary' resource of the rest of the PACE installation."
+            }
+        },
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]",
+            "metadata": {
+                "description": "Azure location to use for most resources. Should usually be the same as the Resource Group location (default)."
+            }
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "ipWhitelist": {
+            "type": "string",
+            "metadata": {
+                "description": "List of IP addresses allowed to bypass restrictions on Storage, Cosmos DB, Key Vault, Event Hubs and Kudu/SCM."
+            }
+        },
+        "functionAppName": {
+            "type": "string"
+        },
+        "functionWebJobsStorageName": {
+            "type": "string"
+        },
+        "appServicePlanName": {
+            "type": "string"
+        },
+        "useSecondaryKeys": {
+            "type": "bool",
+            "defaultValue": false,
+            "metadata": {
+                "description": "Use secondary keys for Cosmos DB, Azure Storage, Redis, API Management, Event Hubs and Service Bus. Allows for key rotation to be performed without interruption of service. Defaults to false (use primary keys)."
+            }
+        },
+        "appInsightsName": {
+            "type": "string"
+        },
+        "backEndAppServiceSku": {
+            "type": "object",
+            "defaultValue": {
+                "name": "S1",
+                "tier": "Standard"
+            },
+            "metadata": {
+                "description": "SKU name and tier to use for App Service Plan."
+            }
+        },
+        "functionAppTimezone": {
+            "type": "string"
+        },
+        "kuduAllowedIpPrefixes": {
+            "type": "array",
+            "defaultValue": [],
+            "metadata": {
+                "description": "List of IP prefixes allowed access to Kudu/SCM. If deploying code using Microsoft-hosted agents for Azure Pipelines, this should include the IP prefixes of all Azure datacenters in the geography of the Azure DevOps organization (see https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops#agent-ip-ranges)."
+            }
+        },
+        "kuduAllowedServiceTags": {
+            "type": "array",
+            "defaultValue": [],
+            "metadata": {
+                "description": "List of service tags allowed access to Kudu/SCM. If deploying code using Microsoft-hosted agents for Azure Pipelines and there are too many IP prefixes to list, the \"AzureCloud\" service tag can be used to allow traffic from all Azure public IP addresses."
+            }
+        },
+        "apiManagementSubnetName": {
+            "type": "string"
+        },
+        "functionResourcesSubnetName": {
+            "type": "string"
+        },
+        "backgroundFunctionResourcesSubnetName": {
+            "type": "string"
+        },
+        "apiPublicRoutePrefix": {
+            "type": "string",
+            "defaultValue": "public/",
+            "metadata": {
+                "description": "Optional value which will override the standard pace API prefixing of parameters('apiPublicRoutePrefix'), '', used for installations which have WAF-based routing requirements."
+            }
+        },
+        "existingApiManagementForSubscriptionKeys": {
+            "type": "object",
+            "defaultValue": {
+
+            },
+            "metadata": {
+                "description": "Details of an existing API Management instance to copy subscription key values from. An object with the keys \"subscriptionId\", \"resourceGroup\", and \"name\"."
+            }
+        },
+        "apiManagementName": {
+            "type": "string"
+        },
+        "URL": {
+            "type": "string"
+        },
+        "APIKey": {
+            "type": "string"
+        },
+        "Uri": {
+            "type": "string"
+        },
+        "AccountName": {
+            "type": "string"
+        },
+        "AccountKey": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2020-10-01",
+            "name": "imageautomation-apim-resources",
+            "dependsOn": [
+            ],
+            "properties": {
+                "mode": "Incremental",
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
+                },
+                "parameters": {
+                    "subscriptionId": {
+                        "value": "[parameters('subscriptionSid')]"
+                    },
+                    "resourceGroupName": {
+                        "value": "[parameters('resourceGroupName')]"
+                    },
+                    "apiPublicRoutePrefix": {
+                        "value": "[parameters('apiPublicRoutePrefix')]"
+                    },
+                    "apiManagementName": {
+                        "value": "[parameters('apiManagementName')]"
+                    },
+                    "functionAppName": {
+                        "value": "[parameters('functionAppName')]"
+                    },
+                    "copySubscriptionKeysFromExistingApiManagementSubscriptionId": {
+                        "value": "[if(empty(parameters('existingApiManagementForSubscriptionKeys')), '', parameters('existingApiManagementForSubscriptionKeys').subscriptionId)]"
+                    },
+                    "copySubscriptionKeysFromExistingApiManagementResourceGroup": {
+                        "value": "[if(empty(parameters('existingApiManagementForSubscriptionKeys')), '', parameters('existingApiManagementForSubscriptionKeys').resourceGroup)]"
+                    },
+                    "copySubscriptionKeysFromExistingApiManagementName": {
+                        "value": "[if(empty(parameters('existingApiManagementForSubscriptionKeys')), '', parameters('existingApiManagementForSubscriptionKeys').name)]"
+                    }
+                },
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "subscriptionId": {
+                            "type": "string"
+                        },
+                        "resourceGroupName": {
+                            "type": "string"
+                        },
+                        "apiPublicRoutePrefix": {
+                            "type": "string"
+                        },
+                        "functionAppName": {
+                            "type": "string"
+                        },
+                        "apiManagementName": {
+                            "type": "string"
+                        },
+                        "copySubscriptionKeysFromExistingApiManagementSubscriptionId": {
+                            "type": "string"
+                        },
+                        "copySubscriptionKeysFromExistingApiManagementResourceGroup": {
+                            "type": "string"
+                        },
+                        "copySubscriptionKeysFromExistingApiManagementName": {
+                            "type": "string"
+                        }
+                    },
+                    "functions": [
+                        {
+                            "namespace": "coke",
+                            "members": {
+                                "apiManagementJwtAndBackendPolicy": {
+                                    "parameters": [
+                                        {
+                                            "name": "backendName",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "name": "openIdConfiguration",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "name": "audience",
+                                            "type": "string"
+                                        },
+                                        {
+                                            "name": "issuer",
+                                            "type": "string"
+                                        }
+                                    ],
+                                    "output": {
+                                        "type": "string",
+                                        "value": "[concat('<policies>\r\n  <inbound>\r\n    <base />\r\n    <validate-jwt header-name=\"Authorization\" failed-validation-httpcode=\"401\" failed-validation-error-message=\"Unauthorized. Access token is missing or invalid.\" output-token-variable-name=\"validated-jwt\">\r\n        <openid-config url=\"', parameters('openIdConfiguration'), '\" />\r\n        <audiences>\r\n            <audience>', parameters('audience'), '</audience>\r\n        </audiences>\r\n        <issuers>\r\n            <issuer>', parameters('issuer'), '</issuer>\r\n        </issuers>\r\n    </validate-jwt>\r\n    <choose>\r\n        <when condition=\"@(((Jwt)context.Variables[&quot;validated-jwt&quot;]).Claims.ContainsKey(&quot;oid&quot;) &amp;&amp; ((Jwt)context.Variables[&quot;validated-jwt&quot;]).Claims[&quot;oid&quot;].Length > 0)\">\r\n            <set-variable name=\"jwt-oid\" value=\"@(((Jwt)context.Variables[&quot;validated-jwt&quot;]).Claims[&quot;oid&quot;][0])\" />\r\n            <trace source=\"JWT Validation\" severity=\"information\">\r\n                <message>@(String.Format(\"JWT oid claim: {0}\", context.Variables[\"jwt-oid\"]))</message>\r\n                <metadata name=\"JWT oid claim\" value=\"@((string)context.Variables[&quot;jwt-oid&quot;])\" />\r\n            </trace>\r\n        </when>\r\n    </choose>\r\n    <set-backend-service id=\"apim-generated-policy\" backend-id=\"', parameters('backendName'), '\" />\r\n  </inbound>\r\n  <backend>\r\n    <base />\r\n  </backend>\r\n  <outbound>\r\n    <base />\r\n  </outbound>\r\n  <on-error>\r\n    <base />\r\n  </on-error>\r\n</policies>')]"
+                                    }
+                                }
+                            }
+                        }
+                    ],
+                    "resources": [
+                        {
+                            "type": "Microsoft.ApiManagement/service/properties",
+                            "apiVersion": "2019-01-01",
+                            "name": "[concat(parameters('apiManagementName'), '/', parameters('functionAppName'), '-key')]",
+                            "properties": {
+                                "displayName": "[concat(parameters('functionAppName'), '-key')]",
+                                "value": "[listkeys(concat(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')), '/host/default/'), '2016-08-01').functionKeys.default]",
+                                "tags": [
+                                    "key",
+                                    "function",
+                                    "auto"
+                                ],
+                                "secret": true
+                            }
+                        },
+                        {
+                            "type": "Microsoft.ApiManagement/service/backends",
+                            "apiVersion": "2019-01-01",
+                            "name": "[concat(parameters('apiManagementName'), '/', parameters('functionAppName'))]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.ApiManagement/service/properties', parameters('apiManagementName'), concat(parameters('functionAppName'), '-key'))]"
+                            ],
+                            "properties": {
+                                "protocol": "http",
+                                "url": "[concat('https://', reference(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')), '2018-11-01').defaultHostName, '/api')]",
+                                "resourceId": "[concat('https://management.azure.com', resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')))]",
+                                "credentials": {
+                                    "header": {
+                                        "x-functions-key": [
+                                            "[concat('{{', parameters('functionAppName'), '-key', '}}')]"
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "type": "Microsoft.ApiManagement/service/apis",
+                            "apiVersion": "2020-12-01",
+                            "name": "[concat(parameters('apiManagementName'), '/', 'imageautomation')]",
+                            "properties": {
+                                "apiRevision": "1",
+                                "displayName": "PACE-image-automation",
+                                "path": "[concat(parameters('apiPublicRoutePrefix'), 'imageautomation')]",
+                                "protocols": [
+                                    "https"
+                                ]
+                            },
+                            "resources": [
+                                {
+                                    "type": "policies",
+                                    "apiVersion": "2019-01-01",
+                                    "name": "policy",
+                                    "dependsOn": [
+                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]",
+                                        "[resourceId('Microsoft.ApiManagement/service/backends', parameters('apiManagementName'), parameters('functionAppName'))]"
+                                    ],
+                                    "properties": {
+                                        "value": "[coke.apiManagementJwtAndBackendPolicy(parameters('functionAppName'))]",
+                                        "format": "xml"
+                                    }
+                                },
+                                {
+                                    "type": "operations",
+                                    "apiVersion": "2019-01-01",
+                                    "name": "post-imageautomation",
+                                    "dependsOn": [
+                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]",
+                                        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apiManagementName'), 'imageautomation')]"
+                                    ],
+                                    "properties": {
+                                        "method": "POST",
+                                        "displayName": "ImageAutomationPost",
+                                        "urlTemplate": "/ImageAutomationPost"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "Microsoft.ApiManagement/service/products/apis",
+                            "apiVersion": "2019-01-01",
+                            "name": "[concat(parameters('apiManagementName'), '/', 'pace-app', '/', 'imageautomation')]",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]"
+                            ],
+                            "properties": {}
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}
