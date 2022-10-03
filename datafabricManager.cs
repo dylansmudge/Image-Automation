@@ -56,8 +56,9 @@ namespace Images
         The main logic behind the query. We want to download the images with the Golden Id and then
         return the next token for sequential queries.
         */
-        public async Task<String> dataFabricQuery(String content, string after = "")
+        public async Task<String> dataFabricQuery(String content)
         {
+            string after;
             List<String> imagesList = new List<String>();
             // Call asynchronous network methods in a try/catch block to handle exceptions.
 
@@ -117,13 +118,20 @@ namespace Images
             return after;
         }
 
+        public static string getQuery(string token)
+        {
+            string query = "{\"query\":\"{\\n  getMMRList(count: 10, after: " + "\\\"" + token + "\\\") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
+            return query;
+        }
+
         /*
         Function used to paginate through the datafabric. 
         Runs through while the token is equal to something. 
         */
-        public async Task dataFabricPaging(String content)
+        public async Task dataFabricPaging()
         {
             string token = "";
+            string query;
             int count = 0;
             Stopwatch stopwatch = new Stopwatch();
             while (token != null)
@@ -132,25 +140,12 @@ namespace Images
                 On the first iteration, the token is equal to an empty string, 
                 hence the if-else statement. 
                 */
-                if (token == "")
-                {
-
-                    stopwatch.Start();
-                    token = await dataFabricQuery(content);
-                    count++;
-                    log.LogInformation("Number of 500-Count calls: " + count);
-                    log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
-                }
-                else
-                {
-                    string replacement = "after: " + "\\\"" + token + "\\\"";
-                    string output = "{\"query\":\"{\\n  getMMRList(count: 500, " + replacement + ") {\\n    items {\\n      goldenRecordNumberMmrId\\n      pgr {\\n        upc {\\n          images {\\n            type\\n            uniformResourceIdentifier\\n            fileEffectiveStartDate\\n          }\\n          itemReferences {\\n            referencedItem\\n            referencedUPC {\\n              images {\\n                type\\n                fileEffectiveStartDate\\n                uniformResourceIdentifier\\n              }\\n            }\\n          }\\n        }\\n      }\\n    }\\n    nextToken\\n  }\\n}\"}";
-                    token = await dataFabricQuery(output);
-                    count++;
-                    log.LogInformation("Token is" + token);
-                    log.LogInformation("Number of 500-Count calls: " + count);
-                    log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
-                }
+                stopwatch.Start();
+                query = getQuery(token);
+                token = await dataFabricQuery(query);
+                count++;
+                log.LogInformation("Number of 10-Count calls: " + count);
+                log.LogInformation("Time taken: " + stopwatch.Elapsed.TotalSeconds);
             }
         }
 

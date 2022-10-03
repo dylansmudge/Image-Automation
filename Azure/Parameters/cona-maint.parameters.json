@@ -26,8 +26,17 @@
         "apiManagementSubnetName": {
             "value": "snet_nonpsub_pac_apim_westus2_01"
         },
+        "jwtOpenIdConfiguration": {
+            "value": "https://login.microsoftonline.com/9120276d-6bfd-47fe-a09f-cdcf486f545f/v2.0/.well-known/openid-configuration"
+        },
+        "jwtAudience": {
+            "value": "https://graph.windows.net/"
+        },
+        "jwtIssuer": {
+            "value": "https://sts.windows.net/9120276d-6bfd-47fe-a09f-cdcf486f545f/"
+        },
         "apiManagementName": {
-            "value": "PACE-image-automation"
+            "value": "apim-nonpsub-m-pac-westus2-01"
         },
         "functionResourcesSubnetName": {
             "value": "snet_nonpsub_pac_appservice_westus2_01"

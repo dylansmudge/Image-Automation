@@ -54,7 +54,7 @@ namespace Images
                     client.BaseAddress = URL;
                 }
                 client.DefaultRequestHeaders.Add("x-api-key", APIKey);
-                await _dataFabricManager.dataFabricPaging(content);
+                await _dataFabricManager.dataFabricPaging();
                 return $"Hello {content}!";
             }
             catch (NullReferenceException e)
@@ -93,7 +93,7 @@ namespace Images
                 client.DefaultRequestHeaders.Add("x-api-key", APIKey);
                 //Read contents of API callback
                 string content = await new StreamReader(req.Body).ReadToEndAsync();
-                await _dataFabricManager.dataFabricPaging(content);
+                await _dataFabricManager.dataFabricPaging();
                 return new OkObjectResult(content);
             }
             catch (HttpRequestException e)

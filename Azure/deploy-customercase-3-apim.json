@@ -37,16 +37,10 @@
                 "description": "Azure location to use for most resources. Should usually be the same as the Resource Group location (default)."
             }
         },
-        "vnetName": {
+        "functionAppName": {
             "type": "string"
         },
-        "ipWhitelist": {
-            "type": "string",
-            "metadata": {
-                "description": "List of IP addresses allowed to bypass restrictions on Storage, Cosmos DB, Key Vault, Event Hubs and Kudu/SCM."
-            }
-        },
-        "functionAppName": {
+        "environment": {
             "type": "string"
         },
         "functionWebJobsStorageName": {
@@ -65,6 +59,23 @@
         "appInsightsName": {
             "type": "string"
         },
+        "cosmosBrokerFunctionAppName": {
+            "type": "string"
+        },
+        "cosmosBrokerAppRegistration": {
+            "type": "string"
+        },
+        "cosmosDbSubscriptionId": {
+            "type": "string",
+            "defaultValue": "[subscription().subscriptionId]"
+        },
+        "cosmosDbResourceGroupName": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().name]"
+        },
+        "cosmosDbName": {
+            "type": "string"
+        },
         "backEndAppServiceSku": {
             "type": "object",
             "defaultValue": {
@@ -77,6 +88,18 @@
         },
         "functionAppTimezone": {
             "type": "string"
+        },
+        "changeFeedLeaseAccountName": {
+            "type": "string"
+        },
+        "vnetName": {
+            "type": "string"
+        },
+        "ipWhitelist": {
+            "type": "string",
+            "metadata": {
+                "description": "List of IP addresses allowed to bypass restrictions on Storage, Cosmos DB, Key Vault, Event Hubs and Kudu/SCM."
+            }
         },
         "kuduAllowedIpPrefixes": {
             "type": "array",
@@ -101,21 +124,43 @@
         "backgroundFunctionResourcesSubnetName": {
             "type": "string"
         },
-        "apiPublicRoutePrefix": {
+        "redisCacheName": {
+            "type": "string"
+        },
+        "reportingEventHubNamespace": {
+            "type": "string"
+        },
+        "formSubmissionEventHubName": {
+            "type": "string"
+        },
+        "customerCaseEventHubName": {
+            "type": "string"
+        },
+        "biibCustomerCaseEgressUrl": {
+            "type": "string"
+        },
+        "customerCaseFormTags": {
             "type": "string",
-            "defaultValue": "public/",
+            "defaultValue": "CUSTOMER_CASE",
             "metadata": {
-                "description": "Optional value which will override the standard pace API prefixing of parameters('apiPublicRoutePrefix'), '', used for installations which have WAF-based routing requirements."
+                "description": "The set of form tags which we want to filter by. If a form submission has this form tag then we should create a customer case."
             }
         },
-        "existingApiManagementForSubscriptionKeys": {
-            "type": "object",
-            "defaultValue": {
-
-            },
+        "customerCaseQuestionType": {
+            "type": "string",
+            "defaultValue": "FILE|PHOTO|SIGNATURE",
             "metadata": {
-                "description": "Details of an existing API Management instance to copy subscription key values from. An object with the keys \"subscriptionId\", \"resourceGroup\", and \"name\"."
+                "description": "The set of question types which should have attachments uploaded to blob storage."
             }
+        },
+        "attachmentsStorageName": {
+            "type": "string"
+        },
+        "orderingServiceBusNamespace": {
+            "type": "string"
+        },
+        "customercaseFunctionAppName": {
+            "type": "string"
         },
         "jwtOpenIdConfiguration": {
             "type": "string"
@@ -126,30 +171,31 @@
         "jwtIssuer": {
             "type": "string"
         },
+        "apiPublicRoutePrefix": {
+            "type": "string",
+            "defaultValue": "public/",
+            "metadata": {
+                "description": "Optional value which will override the standard pace API prefixing of parameters('apiPublicRoutePrefix'), '', used for installations which have WAF-based routing requirements."
+            }
+        },
         "apiManagementName": {
             "type": "string"
         },
-        "URL": {
-            "type": "string"
-        },
-        "APIKey": {
-            "type": "string"
-        },
-        "Uri": {
-            "type": "string"
-        },
-        "AccountName": {
-            "type": "string"
-        },
-        "AccountKey": {
-            "type": "string"
+        "existingApiManagementForSubscriptionKeys": {
+            "type": "object",
+            "defaultValue": {
+
+            },
+            "metadata": {
+                "description": "Details of an existing API Management instance to copy subscription key values from. An object with the keys \"subscriptionId\", \"resourceGroup\", and \"name\"."
+            }
         }
     },
     "resources": [
         {
             "type": "Microsoft.Resources/deployments",
             "apiVersion": "2020-10-01",
-            "name": "imageautomation-apim-resources",
+            "name": "customercase-apim-resources",
             "dependsOn": [
             ],
             "properties": {
@@ -164,9 +210,6 @@
                     "resourceGroupName": {
                         "value": "[parameters('resourceGroupName')]"
                     },
-                    "apiPublicRoutePrefix": {
-                        "value": "[parameters('apiPublicRoutePrefix')]"
-                    },
                     "jwtOpenIdConfiguration": {
                         "value": "[parameters('jwtOpenIdConfiguration')]"
                     },
@@ -176,11 +219,14 @@
                     "jwtIssuer": {
                         "value": "[parameters('jwtIssuer')]"
                     },
+                    "apiPublicRoutePrefix": {
+                        "value": "[parameters('apiPublicRoutePrefix')]"
+                    },
                     "apiManagementName": {
                         "value": "[parameters('apiManagementName')]"
                     },
-                    "functionAppName": {
-                        "value": "[parameters('functionAppName')]"
+                    "customercaseFunctionAppName": {
+                        "value": "[parameters('customercaseFunctionAppName')]"
                     },
                     "copySubscriptionKeysFromExistingApiManagementSubscriptionId": {
                         "value": "[if(empty(parameters('existingApiManagementForSubscriptionKeys')), '', parameters('existingApiManagementForSubscriptionKeys').subscriptionId)]"
@@ -202,12 +248,6 @@
                         "resourceGroupName": {
                             "type": "string"
                         },
-                        "apiPublicRoutePrefix": {
-                            "type": "string"
-                        },
-                        "functionAppName": {
-                            "type": "string"
-                        },
                         "jwtOpenIdConfiguration": {
                             "type": "string"
                         },
@@ -215,6 +255,12 @@
                             "type": "string"
                         },
                         "jwtIssuer": {
+                            "type": "string"
+                        },
+                        "apiPublicRoutePrefix": {
+                            "type": "string"
+                        },
+                        "customercaseFunctionAppName": {
                             "type": "string"
                         },
                         "apiManagementName": {
@@ -265,10 +311,10 @@
                         {
                             "type": "Microsoft.ApiManagement/service/properties",
                             "apiVersion": "2019-01-01",
-                            "name": "[concat(parameters('apiManagementName'), '/', parameters('functionAppName'), '-key')]",
+                            "name": "[concat(parameters('apiManagementName'), '/', parameters('customercaseFunctionAppName'), '-key')]",
                             "properties": {
-                                "displayName": "[concat(parameters('functionAppName'), '-key')]",
-                                "value": "[listkeys(concat(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')), '/host/default/'), '2016-08-01').functionKeys.default]",
+                                "displayName": "[concat(parameters('customercaseFunctionAppName'), '-key')]",
+                                "value": "[listkeys(concat(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('customercaseFunctionAppName')), '/host/default/'), '2016-08-01').functionKeys.default]",
                                 "tags": [
                                     "key",
                                     "function",
@@ -280,18 +326,18 @@
                         {
                             "type": "Microsoft.ApiManagement/service/backends",
                             "apiVersion": "2019-01-01",
-                            "name": "[concat(parameters('apiManagementName'), '/', parameters('functionAppName'))]",
+                            "name": "[concat(parameters('apiManagementName'), '/', parameters('customercaseFunctionAppName'))]",
                             "dependsOn": [
-                                "[resourceId('Microsoft.ApiManagement/service/properties', parameters('apiManagementName'), concat(parameters('functionAppName'), '-key'))]"
+                                "[resourceId('Microsoft.ApiManagement/service/properties', parameters('apiManagementName'), concat(parameters('customercaseFunctionAppName'), '-key'))]"
                             ],
                             "properties": {
                                 "protocol": "http",
-                                "url": "[concat('https://', reference(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')), '2018-11-01').defaultHostName, '/api')]",
-                                "resourceId": "[concat('https://management.azure.com', resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('functionAppName')))]",
+                                "url": "[concat('https://', reference(resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('customercaseFunctionAppName')), '2018-11-01').defaultHostName, '/api')]",
+                                "resourceId": "[concat('https://management.azure.com', resourceId(parameters('subscriptionId'), parameters('resourceGroupName'),'Microsoft.Web/sites', parameters('customercaseFunctionAppName')))]",
                                 "credentials": {
                                     "header": {
                                         "x-functions-key": [
-                                            "[concat('{{', parameters('functionAppName'), '-key', '}}')]"
+                                            "[concat('{{', parameters('customercaseFunctionAppName'), '-key', '}}')]"
                                         ]
                                     }
                                 }
@@ -300,11 +346,11 @@
                         {
                             "type": "Microsoft.ApiManagement/service/apis",
                             "apiVersion": "2020-12-01",
-                            "name": "[concat(parameters('apiManagementName'), '/', 'imageautomation')]",
+                            "name": "[concat(parameters('apiManagementName'), '/', 'customercase')]",
                             "properties": {
                                 "apiRevision": "1",
-                                "displayName": "PACE-image-automation",
-                                "path": "[concat(parameters('apiPublicRoutePrefix'), 'imageautomation')]",
+                                "displayName": "PACE-customercase",
+                                "path": "[concat(parameters('apiPublicRoutePrefix'), 'customercase')]",
                                 "protocols": [
                                     "https"
                                 ]
@@ -315,26 +361,40 @@
                                     "apiVersion": "2019-01-01",
                                     "name": "policy",
                                     "dependsOn": [
-                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]",
-                                        "[resourceId('Microsoft.ApiManagement/service/backends', parameters('apiManagementName'), parameters('functionAppName'))]"
+                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'customercase')]",
+                                        "[resourceId('Microsoft.ApiManagement/service/backends', parameters('apiManagementName'), parameters('customercaseFunctionAppName'))]"
                                     ],
                                     "properties": {
-                                        "value": "[coke.apiManagementJwtAndBackendPolicy(parameters('functionAppName'), parameters('jwtOpenIdConfiguration'), parameters('jwtAudience'), parameters('jwtIssuer'))]",
+                                        "value": "[coke.apiManagementJwtAndBackendPolicy(parameters('customercaseFunctionAppName'), parameters('jwtOpenIdConfiguration'), parameters('jwtAudience'), parameters('jwtIssuer'))]",
                                         "format": "xml"
                                     }
                                 },
                                 {
                                     "type": "operations",
                                     "apiVersion": "2019-01-01",
-                                    "name": "post-imageautomation",
+                                    "name": "post-update-customercase",
                                     "dependsOn": [
-                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]",
-                                        "[resourceId('Microsoft.ApiManagement/service/apis/policies', parameters('apiManagementName'), 'imageautomation', 'policy')]"
+                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'customercase')]",
+                                        "[resourceId('Microsoft.ApiManagement/service/apis/policies', parameters('apiManagementName'), 'customercase', 'policy')]"
                                     ],
                                     "properties": {
                                         "method": "POST",
-                                        "displayName": "ImageAutomationPost",
-                                        "urlTemplate": "/ImageAutomationPost"
+                                        "displayName": "CustomerServiceTicketUpdate",
+                                        "urlTemplate": "/CustomerServiceTicketUpdate"
+                                    }
+                                },
+                                {
+                                    "type": "operations",
+                                    "apiVersion": "2019-01-01",
+                                    "name": "post-cancel-customercase",
+                                    "dependsOn": [
+                                        "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'customercase')]",
+                                        "[resourceId('Microsoft.ApiManagement/service/apis/operations', parameters('apiManagementName'), 'customercase', 'post-update-customercase')]"
+                                    ],
+                                    "properties": {
+                                        "method": "POST",
+                                        "displayName": "CustomerServiceTicketCancel",
+                                        "urlTemplate": "/CustomerServiceTicketCancel"
                                     }
                                 }
                             ]
@@ -342,9 +402,9 @@
                         {
                             "type": "Microsoft.ApiManagement/service/products/apis",
                             "apiVersion": "2019-01-01",
-                            "name": "[concat(parameters('apiManagementName'), '/', 'pace-app', '/', 'imageautomation')]",
+                            "name": "[concat(parameters('apiManagementName'), '/', 'pace-app', '/', 'customercase')]",
                             "dependsOn": [
-                                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'imageautomation')]"
+                                "[resourceId('Microsoft.ApiManagement/service/apis', parameters('apiManagementName'), 'customercase')]"
                             ],
                             "properties": {}
                         }
